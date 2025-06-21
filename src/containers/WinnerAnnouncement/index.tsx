@@ -14,37 +14,37 @@ const WinnerAnnouncement: React.FC<{
   isDark: boolean;
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [isMuted, setIsMuted] = useState(false);
+  // const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  // const [isMuted, setIsMuted] = useState(false);
 
-  useEffect(() => {
-    const winnerAudio = new Audio(WINNER_SOUND);
-    winnerAudio.loop = true;
-    setAudio(winnerAudio);
+  // useEffect(() => {
+  //   const winnerAudio = new Audio(WINNER_SOUND);
+  //   winnerAudio.loop = true;
+  //   setAudio(winnerAudio);
 
-    return () => {
-      if (winnerAudio) {
-        winnerAudio.pause();
-        winnerAudio.currentTime = 0;
-      }
-    };
-  }, []);
+  //   return () => {
+  //     if (winnerAudio) {
+  //       winnerAudio.pause();
+  //       winnerAudio.currentTime = 0;
+  //     }
+  //   };
+  // }, []);
 
-  useEffect(() => {
-    if (audio) {
-      if (isMuted) {
-        audio.pause();
-      } else {
-        audio.play().catch((error) => {
-          console.error("Audio playback failed:", error);
-        });
-      }
-    }
-  }, [audio, isMuted]);
+  // useEffect(() => {
+  //   if (audio) {
+  //     if (isMuted) {
+  //       audio.pause();
+  //     } else {
+  //       audio.play().catch((error) => {
+  //         console.error("Audio playback failed:", error);
+  //       });
+  //     }
+  //   }
+  // }, [audio, isMuted]);
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
+  // const toggleMute = () => {
+  //   setIsMuted(!isMuted);
+  // };
 
   return (
     <div
@@ -60,7 +60,7 @@ const WinnerAnnouncement: React.FC<{
             isDark ? "bg-gray-800" : "bg-white"
           } p-10 rounded-3xl text-center mx-auto relative`}
         >
-          <button
+          {/* <button
             onClick={toggleMute}
             className={`absolute top-4 right-4 p-2 rounded-full ${
               isDark
@@ -74,7 +74,7 @@ const WinnerAnnouncement: React.FC<{
             ) : (
               <Volume2 className="w-5 h-5" />
             )}
-          </button>
+          </button> */}
 
           <div className="mb-8 w-full">
             <div className="relative inline-block">

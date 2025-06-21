@@ -59,6 +59,7 @@ const BallotingApp: React.FC = () => {
   const handleParseParticipants = () => {
     const { participants: newParticipants } = parseParticipants(inputText);
     setParticipants(newParticipants);
+    setInputText("");
   };
 
   const handleSpin = () => {
