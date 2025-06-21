@@ -20,6 +20,7 @@ const SpinWheel: React.FC<{
   isDark: boolean;
   setParticipants: React.Dispatch<React.SetStateAction<Participant[]>>;
   winner: Participant | null;
+  handleFullReset: () => void;
 }> = ({
   participants,
   onSpin,
@@ -29,8 +30,7 @@ const SpinWheel: React.FC<{
   hoveredSegment,
   onReset,
   isDark,
-  setParticipants,
-  winner,
+  handleFullReset,
 }) => {
   const wheelRef = useRef<SVGSVGElement>(null);
 
@@ -356,6 +356,18 @@ const SpinWheel: React.FC<{
           >
             <RotateCcw className="w-5 h-5" />
             Reset
+          </button>
+
+          <button
+            onClick={handleFullReset}
+            className={`flex items-center gap-2 px-8 py-5 rounded-2xl ${
+              isDark
+                ? "bg-red-900 hover:bg-red-800"
+                : "bg-red-600 hover:bg-red-700"
+            } text-white cursor-pointer font-semibold transition-all duration-300 transform hover:scale-105`}
+          >
+            <RotateCcw className="w-5 h-5" />
+            Full Reset
           </button>
         </div>
       </div>

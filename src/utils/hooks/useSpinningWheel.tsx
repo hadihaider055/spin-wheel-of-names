@@ -1,7 +1,9 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 // Types
 import { Participant } from "../types/common";
+
+const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
 
 export const useSpinWheel = () => {
   const [isSpinning, setIsSpinning] = useState(false);
@@ -9,6 +11,22 @@ export const useSpinWheel = () => {
   const [winner, setWinner] = useState<Participant | null>(null);
   const [rotation, setRotation] = useState(0);
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
+  const [winners, setWinners] = useState<Participant[]>([]);
+
+  useEffect(() => {
+    const savedWinners = localStorage.getItem(WINNERS_STORAGE_KEY);
+    if (savedWinners) {
+      try {
+        setWinners(JSON.parse(savedWinners));
+      } catch (error) {
+        console.error("Failed to parse saved winners", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(winners));
+  }, [winners]);
 
   const spin = (participants: Participant[]) => {
     if (isSpinning || participants.length === 0) return;
@@ -36,10 +54,20 @@ export const useSpinWheel = () => {
       setHoveredSegment(winnerIndex);
 
       setTimeout(() => {
-        setWinner(participants[winnerIndex] || participants[0]);
+        const newWinner = participants[winnerIndex] || participants[0];
+        setWinner(newWinner);
+        setWinners((prevWinners) => {
+          const updatedWinners = [newWinner, ...prevWinners];
+          return updatedWinners.slice(0, 10);
+        });
         setIsWheelStopped(false);
       }, 1000);
     }, 5000);
+  };
+
+  const clearWinners = () => {
+    setWinners([]);
+    localStorage.removeItem(WINNERS_STORAGE_KEY);
   };
 
   const reset = () => {
@@ -56,7 +84,9 @@ export const useSpinWheel = () => {
     winner,
     rotation,
     hoveredSegment,
+    winners,
     spin,
     reset,
+    clearWinners,
   };
 };
