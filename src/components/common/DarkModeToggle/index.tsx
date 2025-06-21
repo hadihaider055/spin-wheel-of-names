@@ -12,7 +12,7 @@ const DarkModeToggle: React.FC<{ isDark: boolean; onToggle: () => void }> = ({
     {isDark ? (
       <Sun className="w-6 h-6 text-yellow-500" />
     ) : (
-      <Moon className="w-6 h-6 text-gray-700" />
+      <Moon className="w-6 h-6 text-gray-200" />
     )}
   </button>
 );

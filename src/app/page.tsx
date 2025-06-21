@@ -50,14 +50,6 @@ const BallotingApp: React.FC = () => {
     reader.readAsDataURL(file);
   };
 
-  const handleCloseWinner = () => {
-    reset();
-
-    setTimeout(() => {
-      reset();
-    }, 300);
-  };
-
   return (
     <div
       className={`min-h-screen transition-colors duration-500 ${
@@ -165,7 +157,7 @@ const BallotingApp: React.FC = () => {
       {winner && (
         <WinnerAnnouncement
           winner={winner}
-          onClose={handleCloseWinner}
+          onClose={reset}
           isDark={isDark}
           giftImage={giftImage}
         />

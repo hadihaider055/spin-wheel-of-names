@@ -38,7 +38,7 @@ export const useSpinWheel = () => {
       setTimeout(() => {
         setWinner(participants[winnerIndex] || participants[0]);
         setIsWheelStopped(false);
-      }, 2000);
+      }, 1000);
     }, 5000);
   };
 

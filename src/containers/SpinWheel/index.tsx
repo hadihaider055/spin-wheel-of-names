@@ -33,7 +33,7 @@ const SpinWheel: React.FC<{
       <div
         className={`${
           isDark ? "bg-gray-800 border-gray-700" : "bg-white border-gray-100"
-        } rounded-2xl shadow-2xl p-12 text-center border`}
+        } rounded-2xl shadow-2xl p-12 text-center border mb-12`}
       >
         <div className={`${isDark ? "text-gray-500" : "text-gray-400"} mb-4`}>
           <Users className="w-24 h-24 mx-auto" />
@@ -156,13 +156,6 @@ const SpinWheel: React.FC<{
                         />
                       </svg>
                     </div>
-
-                    {hoveredSegment !== null && (
-                      <>
-                        <div className="absolute top-2 left-1/2 transform -translate-x-1/2 w-6 h-6 bg-yellow-400 rounded-full animate-ping opacity-75"></div>
-                        <div className="absolute top-3 left-1/2 transform -translate-x-1/2 w-5 h-5 bg-red-400 rounded-full animate-pulse"></div>
-                      </>
-                    )}
                   </div>
                 </div>
               </div>
@@ -285,7 +278,7 @@ const SpinWheel: React.FC<{
                       transform={`rotate(${midAngle}, ${textX}, ${textY})`}
                       className={`${
                         isWinningSegment ? "animate-pulse" : ""
-                      } text-md`}
+                      } text-lg`}
                     >
                       {participant.name}
                     </text>

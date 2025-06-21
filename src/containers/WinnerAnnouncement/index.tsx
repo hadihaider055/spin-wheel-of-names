@@ -12,16 +12,12 @@ const WinnerAnnouncement: React.FC<{
   isDark: boolean;
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
-  const [showAnimation, setShowAnimation] = useState(false);
-
-  useEffect(() => {
-    setShowAnimation(true);
-    const timer = setTimeout(() => setShowAnimation(false), 2000);
-    return () => clearTimeout(timer);
-  }, [winner]);
-
   return (
-    <div className="fixed inset-0 bg-black/20 animate-overlayShow z-[70] backdrop-blur-sm flex items-center justify-center z-50 p-4">
+    <div
+      className={`fixed inset-0 ${
+        isDark ? "bg-black/20" : "bg-black/60"
+      } animate-overlayShow z-[70] backdrop-blur-sm flex items-center justify-center z-50 p-4`}
+    >
       <div
         className={`bg-gradient-to-br from-yellow-400 via-yellow-300 to-amber-400 p-1 rounded-3xl shadow-2xl`}
       >
