@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 
 // Icons
-import { Trophy, Sparkles, Gift } from "lucide-react";
+import { Trophy, Sparkles, Gift, Volume2, VolumeX } from "lucide-react";
 
 // Utils
 import { Participant } from "@/utils/types/common";
+
+const WINNER_SOUND = "/aye-zaire-hussain.mp3";
 
 const WinnerAnnouncement: React.FC<{
   winner: Participant;
@@ -12,6 +14,38 @@ const WinnerAnnouncement: React.FC<{
   isDark: boolean;
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
+  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const [isMuted, setIsMuted] = useState(false);
+
+  useEffect(() => {
+    const winnerAudio = new Audio(WINNER_SOUND);
+    winnerAudio.loop = true;
+    setAudio(winnerAudio);
+
+    return () => {
+      if (winnerAudio) {
+        winnerAudio.pause();
+        winnerAudio.currentTime = 0;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (audio) {
+      if (isMuted) {
+        audio.pause();
+      } else {
+        audio.play().catch((error) => {
+          console.error("Audio playback failed:", error);
+        });
+      }
+    }
+  }, [audio, isMuted]);
+
+  const toggleMute = () => {
+    setIsMuted(!isMuted);
+  };
+
   return (
     <div
       className={`fixed inset-0 ${
@@ -24,8 +58,24 @@ const WinnerAnnouncement: React.FC<{
         <div
           className={`${
             isDark ? "bg-gray-800" : "bg-white"
-          } p-10 rounded-3xl text-center mx-auto`}
+          } p-10 rounded-3xl text-center mx-auto relative`}
         >
+          <button
+            onClick={toggleMute}
+            className={`absolute top-4 right-4 p-2 rounded-full ${
+              isDark
+                ? "bg-gray-700 hover:bg-gray-600"
+                : "bg-gray-200 hover:bg-gray-300"
+            } transition-colors`}
+            aria-label={isMuted ? "Unmute sound" : "Mute sound"}
+          >
+            {isMuted ? (
+              <VolumeX className="w-5 h-5" />
+            ) : (
+              <Volume2 className="w-5 h-5" />
+            )}
+          </button>
+
           <div className="mb-8 w-full">
             <div className="relative inline-block">
               <Trophy className="w-16 h-16 text-yellow-500 mx-auto mb-4" />
@@ -48,17 +98,6 @@ const WinnerAnnouncement: React.FC<{
 
             {giftImage && (
               <div className="mt-6 mb-6 w-full">
-                {/* <div className="flex items-center justify-center mb-3">
-                  <Gift className="w-6 h-6 text-yellow-400 mr-2" />
-                  <p
-                    className={`text-lg font-semibold ${
-                      isDark ? "text-white" : "text-gray-800"
-                    }`}
-                  >
-                    Wins This Amazing Prize!
-                  </p>
-                  <Gift className="w-6 h-6 text-yellow-400 ml-2" />
-                </div> */}
                 <img
                   src={giftImage}
                   alt="Winner's Prize"

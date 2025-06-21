@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 // Components
 import DarkModeToggle from "@/components/common/DarkModeToggle";
@@ -16,6 +16,8 @@ import { useDarkMode } from "@/utils/hooks/useDarkMode";
 import { useSpinWheel } from "@/utils/hooks/useSpinningWheel";
 import { Participant } from "@/utils/types/common";
 
+const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
+
 const BallotingApp: React.FC = () => {
   const [inputText, setInputText] = useState("");
   const [participants, setParticipants] = useState<Participant[]>([]);
@@ -30,6 +32,24 @@ const BallotingApp: React.FC = () => {
     spin,
     reset,
   } = useSpinWheel();
+
+  useEffect(() => {
+    const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
+    if (savedParticipants) {
+      try {
+        setParticipants(JSON.parse(savedParticipants));
+      } catch (error) {
+        console.error("Failed to parse saved participants", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    localStorage.setItem(
+      PARTICIPANTS_STORAGE_KEY,
+      JSON.stringify(participants)
+    );
+  }, [participants]);
 
   const handleParseParticipants = () => {
     const { participants: newParticipants } = parseParticipants(inputText);
@@ -48,6 +68,15 @@ const BallotingApp: React.FC = () => {
       setGiftImage(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleWinnerClose = () => {
+    if (winner) {
+      setParticipants((prevParticipants) =>
+        prevParticipants.filter((p) => p.id !== winner.id)
+      );
+    }
+    reset();
   };
 
   return (
@@ -76,6 +105,8 @@ const BallotingApp: React.FC = () => {
           hoveredSegment={hoveredSegment}
           onReset={reset}
           isDark={isDark}
+          setParticipants={setParticipants}
+          winner={winner}
         />
 
         <Input
@@ -157,7 +188,7 @@ const BallotingApp: React.FC = () => {
       {winner && (
         <WinnerAnnouncement
           winner={winner}
-          onClose={reset}
+          onClose={handleWinnerClose}
           isDark={isDark}
           giftImage={giftImage}
         />

@@ -1,4 +1,6 @@
-import { useRef } from "react";
+"use client";
+
+import { useEffect, useRef } from "react";
 
 // Icons
 import { Trophy, Users, Play, RotateCcw } from "lucide-react";
@@ -16,6 +18,8 @@ const SpinWheel: React.FC<{
   hoveredSegment: number | null;
   onReset: () => void;
   isDark: boolean;
+  setParticipants: React.Dispatch<React.SetStateAction<Participant[]>>;
+  winner: Participant | null;
 }> = ({
   participants,
   onSpin,
@@ -25,6 +29,8 @@ const SpinWheel: React.FC<{
   hoveredSegment,
   onReset,
   isDark,
+  setParticipants,
+  winner,
 }) => {
   const wheelRef = useRef<SVGSVGElement>(null);
 
