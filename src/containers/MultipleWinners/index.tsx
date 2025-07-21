@@ -5,7 +5,7 @@ import { Trophy, Users, X } from "lucide-react";
 
 // Utils
 import { Participant } from "@/utils/types/common";
-import { config } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 interface MultipleWinnersModalProps {
   winners: Participant[];
@@ -20,13 +20,14 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
   isDark,
   giftImage,
 }) => {
+  const { appConfig } = useConfig();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
-    if (config.audio.winnerSound && config.winner.celebrationSound) {
+    if (appConfig.audio.winnerSound && appConfig.winner.celebrationSound) {
       const timer = setTimeout(() => {
-        const winnerAudio = new Audio(config.audio.winnerSound!);
-        winnerAudio.volume = config.audio.volume;
+        const winnerAudio = new Audio(appConfig.audio.winnerSound!);
+        winnerAudio.volume = appConfig.audio.volume;
         winnerAudio.loop = true;
         setAudio(winnerAudio);
       }, 100);
@@ -54,7 +55,7 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
         audio.currentTime = 0;
       }
       onClose();
-    }, config.winner.displayDuration + 2000);
+    }, appConfig.winner.displayDuration + 2000);
 
     return () => {
       clearTimeout(timer);
@@ -74,8 +75,8 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
   };
 
   if (
-    !config.features.multipleWinners ||
-    !config.multipleWinners.enabled ||
+    !appConfig.features.multipleWinners ||
+    !appConfig.multipleWinners.enabled ||
     winners.length === 0
   ) {
     return null;

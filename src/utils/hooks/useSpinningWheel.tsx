@@ -2,11 +2,12 @@ import { useState, useEffect } from "react";
 
 // Types
 import { Participant } from "../types/common";
-import { config } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
 
 export const useSpinWheel = () => {
+  const { appConfig } = useConfig();
   const [isSpinning, setIsSpinning] = useState(false);
   const [isWheelStopped, setIsWheelStopped] = useState(false);
   const [winner, setWinner] = useState<Participant | null>(null);
@@ -62,10 +63,10 @@ export const useSpinWheel = () => {
       setCurrentSpinAudio(null);
     }
 
-    if (config.wheel.enableSound && config.audio.spinSound) {
+    if (appConfig.wheel.enableSound && appConfig.audio.spinSound) {
       try {
-        const audio = new Audio(config.audio.spinSound);
-        audio.volume = config.audio.volume;
+        const audio = new Audio(appConfig.audio.spinSound);
+        audio.volume = appConfig.audio.volume;
         audio.loop = true;
 
         setCurrentSpinAudio(audio);
@@ -74,12 +75,11 @@ export const useSpinWheel = () => {
           .play()
           .then(() => {})
           .catch(() => {});
-      } catch (error) {
-      }
+      } catch (error) {}
     }
 
-    const minRotation = config.wheel.minSpins * 360;
-    const maxRotation = config.wheel.maxSpins * 360;
+    const minRotation = appConfig.wheel.minSpins * 360;
+    const maxRotation = appConfig.wheel.maxSpins * 360;
     const randomRotation =
       Math.random() * (maxRotation - minRotation) + minRotation;
     const finalRotation = rotation + randomRotation;
@@ -116,7 +116,7 @@ export const useSpinWheel = () => {
         });
         setIsWheelStopped(false);
       }, 1000);
-    }, config.wheel.spinDuration);
+    }, appConfig.wheel.spinDuration);
   };
 
   const removeWinner = (winnerId: string, winnerIndex: number) => {

@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import DarkModeToggle from "@/components/common/DarkModeToggle";
 import Input from "@/components/common/Input";
 import Navbar from "@/components/common/Navbar";
+import Footer from "@/components/common/Footer";
 import GiftSection from "@/containers/GiftSection";
 import SpinWheel from "@/containers/SpinWheel";
 import WinnerAnnouncement from "@/containers/WinnerAnnouncement";
@@ -18,11 +19,14 @@ import { parseParticipants } from "@/utils/functions/parseParticipants";
 import { useDarkMode } from "@/utils/hooks/useDarkMode";
 import { useSpinWheel } from "@/utils/hooks/useSpinningWheel";
 import { Participant } from "@/utils/types/common";
-import { config, applyTheme } from "@/config/config";
+import { applyTheme } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 import { Trash2 } from "lucide-react";
 
 const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
 const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
+const GIFT_IMAGE_STORAGE_KEY = "wheelOfFortuneGiftImage";
+const SELECTED_CATEGORIES_STORAGE_KEY = "wheelOfFortuneSelectedCategories";
 
 const BallotingApp: React.FC = () => {
   const [inputText, setInputText] = useState("");
@@ -32,7 +36,9 @@ const BallotingApp: React.FC = () => {
   const [showBumperPrize, setShowBumperPrize] = useState(false);
   const [bumperPrizeWinner, setBumperPrizeWinner] = useState<any>(null);
   const [multipleWinners, setMultipleWinners] = useState<Participant[]>([]);
+  const [isFullReset, setIsFullReset] = useState(false);
   const { isDark, toggleDarkMode } = useDarkMode();
+  const { appConfig } = useConfig();
   const {
     isSpinning,
     isWheelStopped,
@@ -49,28 +55,67 @@ const BallotingApp: React.FC = () => {
 
   useEffect(() => {
     applyTheme(isDark);
+  }, [isDark]);
+
+  useEffect(() => {
+    document.title = appConfig.title;
+  }, [appConfig.title]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
 
     const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
-    const savedWinners = localStorage.getItem(WINNERS_STORAGE_KEY);
+    const savedGiftImage = localStorage.getItem(GIFT_IMAGE_STORAGE_KEY);
+    const savedSelectedCategories = localStorage.getItem(
+      SELECTED_CATEGORIES_STORAGE_KEY
+    );
 
     if (savedParticipants) {
       try {
-        setParticipants(JSON.parse(savedParticipants));
+        const participants = JSON.parse(savedParticipants);
+        setParticipants(participants);
       } catch (error) {
         console.error("Failed to parse saved participants", error);
       }
-    } else if (config.defaultParticipants.length > 0) {
-      const defaultParticipants = config.defaultParticipants.map(
-        (name, index) => ({
-          id: `default-${index}`,
-          name,
-          grade: "",
-          category: "Default Category",
-        })
-      );
-      setParticipants(defaultParticipants);
     }
-  }, [isDark]);
+
+    if (savedGiftImage) {
+      try {
+        setGiftImage(savedGiftImage);
+      } catch (error) {
+        console.error("Failed to parse saved gift image", error);
+      }
+    }
+
+    if (savedSelectedCategories) {
+      try {
+        setSelectedCategories(JSON.parse(savedSelectedCategories));
+      } catch (error) {
+        console.error("Failed to parse saved selected categories", error);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (
+      participants.length === 0 &&
+      appConfig.defaultParticipants.length > 0 &&
+      !isFullReset
+    ) {
+      const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
+      if (!savedParticipants) {
+        const defaultParticipants = appConfig.defaultParticipants.map(
+          (name, index) => ({
+            id: `default-${index}`,
+            name,
+            grade: "",
+            category: "Default Category",
+          })
+        );
+        setParticipants(defaultParticipants);
+      }
+    }
+  }, [appConfig.defaultParticipants, participants.length, isFullReset]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -80,30 +125,42 @@ const BallotingApp: React.FC = () => {
   }, [participants]);
 
   useEffect(() => {
+    if (giftImage) {
+      localStorage.setItem(GIFT_IMAGE_STORAGE_KEY, giftImage);
+    } else {
+      localStorage.removeItem(GIFT_IMAGE_STORAGE_KEY);
+    }
+  }, [giftImage]);
+
+  useEffect(() => {
+    localStorage.setItem(
+      SELECTED_CATEGORIES_STORAGE_KEY,
+      JSON.stringify(selectedCategories)
+    );
+  }, [selectedCategories]);
+
+  useEffect(() => {
     if (winner) {
       stopAudio();
-      
-      // Check for bumper prize trigger
-      if (config.features.bumperPrize && config.bumperPrize.enabled && 
-          winners.length >= config.bumperPrize.triggerAfter && 
-          (winners.length + 1) % config.bumperPrize.triggerAfter === 0) {
+
+      if (
+        appConfig.features.bumperPrize &&
+        appConfig.bumperPrize.enabled &&
+        winners.length >= appConfig.bumperPrize.triggerAfter &&
+        (winners.length + 1) % appConfig.bumperPrize.triggerAfter === 0
+      ) {
         setShowBumperPrize(true);
       }
     }
-  }, [winner, stopAudio, winners.length]);
-
-  const handleParseParticipants = () => {
-    const { participants: newParticipants } = parseParticipants(inputText);
-    setParticipants(newParticipants);
-    setInputText("");
-  };
+  }, [winner, stopAudio, winners.length, appConfig]);
 
   const handleSpin = () => {
     if (!isSpinning && !isWheelStopped && participants.length > 0) {
-      const filteredParticipants = selectedCategories.length > 0
-        ? participants.filter(p => selectedCategories.includes(p.category))
-        : participants;
-      
+      const filteredParticipants =
+        selectedCategories.length > 0
+          ? participants.filter((p) => selectedCategories.includes(p.category))
+          : participants;
+
       if (filteredParticipants.length > 0) {
         spin(filteredParticipants);
       }
@@ -116,6 +173,10 @@ const BallotingApp: React.FC = () => {
       setGiftImage(e.target?.result as string);
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleImageRemove = () => {
+    setGiftImage(null);
   };
 
   const handleWinnerClose = () => {
@@ -196,12 +257,20 @@ const BallotingApp: React.FC = () => {
     setShowBumperPrize(false);
   };
 
+  const handleRegularReset = () => {
+    console.log("Regular Reset button clicked!");
+    reset();
+    clearWinners();
+    console.log("Regular reset completed - cleared winners and reset wheel state");
+  };
+
   const handleFullReset = () => {
     if (
       window.confirm(
         "Are you sure you want to reset everything? This will clear all participants and winners."
       )
     ) {
+      setIsFullReset(true);
       setInputText("");
       setParticipants([]);
       setGiftImage(null);
@@ -211,9 +280,21 @@ const BallotingApp: React.FC = () => {
 
       localStorage.removeItem(PARTICIPANTS_STORAGE_KEY);
       localStorage.removeItem(WINNERS_STORAGE_KEY);
+      localStorage.removeItem(GIFT_IMAGE_STORAGE_KEY);
+      localStorage.removeItem(SELECTED_CATEGORIES_STORAGE_KEY);
 
       reset();
       clearWinners();
+    }
+  };
+
+  const handleParseParticipants = () => {
+    const { participants: newParticipants } = parseParticipants(inputText);
+    setParticipants(newParticipants);
+    setInputText("");
+
+    if (isFullReset && newParticipants.length > 0) {
+      setIsFullReset(false);
     }
   };
 
@@ -231,6 +312,7 @@ const BallotingApp: React.FC = () => {
         <GiftSection
           giftImage={giftImage}
           onImageUpload={handleImageUpload}
+          onImageRemove={handleImageRemove}
           isDark={isDark}
         />
 
@@ -241,7 +323,7 @@ const BallotingApp: React.FC = () => {
           isWheelStopped={isWheelStopped}
           rotation={rotation}
           hoveredSegment={hoveredSegment}
-          onReset={reset}
+          onReset={handleRegularReset}
           isDark={isDark}
           setParticipants={setParticipants}
           winner={winner}
@@ -282,7 +364,7 @@ const BallotingApp: React.FC = () => {
                     Loaded Participants ({participants.length})
                   </h3>
                   {participants.length > 0 &&
-                    config.features.clearAllParticipants && (
+                    appConfig.features.clearAllParticipants && (
                       <button
                         onClick={handleClearAllParticipants}
                         disabled={isSpinning}
@@ -322,7 +404,7 @@ const BallotingApp: React.FC = () => {
                             }
                             )
                           </h4>
-                          {config.features.categoryManagement && (
+                          {appConfig.features.categoryManagement && (
                             <button
                               onClick={() => handleDeleteCategory(category)}
                               disabled={isSpinning}
@@ -355,17 +437,20 @@ const BallotingApp: React.FC = () => {
                                   >
                                     {participant.name}
                                   </span>
-                                  {participant.grade && participant.grade.trim() !== "" && (
-                                    <span
-                                      className={`${
-                                        isDark ? "text-gray-300" : "text-gray-600"
-                                      } ml-2`}
-                                    >
-                                      ({participant.grade})
-                                    </span>
-                                  )}
+                                  {participant.grade &&
+                                    participant.grade.trim() !== "" && (
+                                      <span
+                                        className={`${
+                                          isDark
+                                            ? "text-gray-300"
+                                            : "text-gray-600"
+                                        } ml-2`}
+                                      >
+                                        ({participant.grade})
+                                      </span>
+                                    )}
                                 </div>
-                                {config.features.deleteParticipants && (
+                                {appConfig.features.deleteParticipants && (
                                   <button
                                     onClick={() =>
                                       handleDeleteParticipant(participant.id)
@@ -399,7 +484,7 @@ const BallotingApp: React.FC = () => {
                   >
                     Previous Winners ({winners.length})
                   </h3>
-                  {winners.length > 0 && config.features.clearAllWinners && (
+                  {winners.length > 0 && appConfig.features.clearAllWinners && (
                     <button
                       onClick={handleClearAllWinners}
                       disabled={isSpinning}
@@ -459,7 +544,7 @@ const BallotingApp: React.FC = () => {
                                   NEW!
                                 </span>
                               )}
-                              {config.features.deleteWinners && (
+                              {appConfig.features.deleteWinners && (
                                 <button
                                   onClick={() => handleRemoveWinner(index)}
                                   disabled={isSpinning}
@@ -518,6 +603,8 @@ const BallotingApp: React.FC = () => {
           giftImage={giftImage}
         />
       )}
+
+      <Footer isDark={isDark} />
     </div>
   );
 };

@@ -5,7 +5,7 @@ import { Trophy, Sparkles, Gift, Volume2, VolumeX } from "lucide-react";
 
 // Utils
 import { Participant } from "@/utils/types/common";
-import { config } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 const WinnerAnnouncement: React.FC<{
   winner: Participant;
@@ -13,15 +13,16 @@ const WinnerAnnouncement: React.FC<{
   isDark: boolean;
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
+  const { appConfig } = useConfig();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
-  const [isMuted, setIsMuted] = useState(!config.winner.celebrationSound);
+  const [isMuted, setIsMuted] = useState(!appConfig.winner.celebrationSound);
 
   useEffect(() => {
-    if (config.audio.winnerSound && config.winner.celebrationSound) {
+    if (appConfig.audio.winnerSound && appConfig.winner.celebrationSound) {
       const timer = setTimeout(() => {
-        if (typeof config.audio.winnerSound === "string") {
-          const winnerAudio = new Audio(config.audio.winnerSound);
-          winnerAudio.volume = config.audio.volume;
+        if (typeof appConfig.audio.winnerSound === "string") {
+          const winnerAudio = new Audio(appConfig.audio.winnerSound);
+          winnerAudio.volume = appConfig.audio.volume;
           winnerAudio.loop = true;
           setAudio(winnerAudio);
         }
@@ -38,13 +39,11 @@ const WinnerAnnouncement: React.FC<{
   }, []);
 
   useEffect(() => {
-    if (audio && config.winner.celebrationSound) {
+    if (audio && appConfig.winner.celebrationSound) {
       if (isMuted) {
         audio.pause();
       } else {
-        audio.play().catch(() => {
-          // Audio playback failed (likely due to autoplay policy)
-        });
+        audio.play().catch(() => {});
       }
     }
   }, [audio, isMuted]);
@@ -60,7 +59,7 @@ const WinnerAnnouncement: React.FC<{
         audio.currentTime = 0;
       }
       onClose();
-    }, config.winner.displayDuration);
+    }, appConfig.winner.displayDuration);
 
     return () => {
       clearTimeout(timer);
@@ -93,7 +92,7 @@ const WinnerAnnouncement: React.FC<{
             isDark ? "bg-gray-800" : "bg-white"
           } p-6 md:p-10 rounded-3xl text-center relative`}
         >
-          {config.audio.winnerSound && (
+          {appConfig.audio.winnerSound && (
             <button
               onClick={toggleMute}
               className={`absolute top-4 right-4 p-2 rounded-full ${

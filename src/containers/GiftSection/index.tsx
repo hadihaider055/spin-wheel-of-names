@@ -1,13 +1,14 @@
 import { useRef } from "react";
 
 // Icons
-import { Gift, Upload } from "lucide-react";
+import { Gift, Upload, X } from "lucide-react";
 
 const GiftSection: React.FC<{
   giftImage: string | null;
   onImageUpload: (file: File) => void;
+  onImageRemove?: () => void;
   isDark: boolean;
-}> = ({ giftImage, onImageUpload, isDark }) => {
+}> = ({ giftImage, onImageUpload, onImageRemove, isDark }) => {
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleImageClick = () => {
@@ -18,6 +19,13 @@ const GiftSection: React.FC<{
     const file = e.target.files?.[0];
     if (file) {
       onImageUpload(file);
+    }
+  };
+
+  const handleRemoveImage = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onImageRemove) {
+      onImageRemove();
     }
   };
 
@@ -58,21 +66,37 @@ const GiftSection: React.FC<{
 
       <div className="relative max-w-4xl mx-auto">
         {giftImage ? (
-          <div
-            className="relative group cursor-pointer"
-            onClick={handleImageClick}
-          >
-            <img
-              src={giftImage}
-              alt="Prize"
-              className="w-full h-64 md:h-80 object-cover rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105"
-            />
-            <div className="absolute inset-0 bg-black/20 animate-overlayShow z-[70] backdrop-blur-sm bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex items-center justify-center">
-              <div className="text-white text-center">
-                <Upload className="w-8 h-8 mx-auto mb-2" />
-                <p className="font-semibold">Click to change image</p>
+          <div className="relative group">
+            <div
+              className="cursor-pointer"
+              onClick={handleImageClick}
+            >
+              <img
+                src={giftImage}
+                alt="Prize"
+                className="w-full h-64 md:h-80 object-cover rounded-xl shadow-lg transition-transform duration-300 group-hover:scale-105"
+              />
+              <div className="absolute inset-0 bg-black/20 animate-overlayShow z-[70] backdrop-blur-sm bg-opacity-40 opacity-0 group-hover:opacity-100 transition-opacity duration-300 rounded-xl flex items-center justify-center">
+                <div className="text-white text-center">
+                  <Upload className="w-8 h-8 mx-auto mb-2" />
+                  <p className="font-semibold">Click to change image</p>
+                </div>
               </div>
             </div>
+            
+            {onImageRemove && (
+              <button
+                onClick={handleRemoveImage}
+                className={`absolute top-3 right-3 z-[80] p-2 rounded-full ${
+                  isDark 
+                    ? "bg-red-600 hover:bg-red-700" 
+                    : "bg-red-500 hover:bg-red-600"
+                } text-white shadow-lg transition-all duration-200 hover:scale-110 opacity-0 group-hover:opacity-100`}
+                title="Remove image"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            )}
           </div>
         ) : (
           <div

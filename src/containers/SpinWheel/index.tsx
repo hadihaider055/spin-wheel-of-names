@@ -3,12 +3,14 @@
 import { useEffect, useRef } from "react";
 
 // Icons
-import { Trophy, Users, Play, RotateCcw } from "lucide-react";
+import { Trophy, Users, Play, RotateCcw, Settings } from "lucide-react";
+import Link from "next/link";
 
 // Utils
 import { generateGradientColors } from "@/utils/functions/generateGradientColors";
 import { Participant } from "@/utils/types/common";
-import { config, getWheelColors } from "@/config/config";
+import { getWheelColors } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 const SpinWheel: React.FC<{
   participants: Participant[];
@@ -34,6 +36,7 @@ const SpinWheel: React.FC<{
   handleFullReset,
 }) => {
   const wheelRef = useRef<SVGSVGElement>(null);
+  const { appConfig } = useConfig();
 
   if (participants.length === 0) {
     return (
@@ -61,9 +64,9 @@ const SpinWheel: React.FC<{
 
   const colors = getWheelColors('default');
   const segmentAngle = 360 / participants.length;
-  const radius = config.wheel.wheelSize / 2 - 50;
-  const centerX = config.wheel.wheelSize / 2;
-  const centerY = config.wheel.wheelSize / 2;
+  const radius = appConfig.wheel.wheelSize / 2 - 50;
+  const centerX = appConfig.wheel.wheelSize / 2;
+  const centerY = appConfig.wheel.wheelSize / 2;
 
   const createSegmentPath = (startAngle: number, endAngle: number) => {
     const startAngleRad = (startAngle * Math.PI) / 180;
@@ -179,23 +182,23 @@ const SpinWheel: React.FC<{
           <div className="relative">
             <svg
               ref={wheelRef}
-              width={config.wheel.wheelSize}
-              height={config.wheel.wheelSize}
+              width={appConfig.wheel.wheelSize}
+              height={appConfig.wheel.wheelSize}
               className={`drop-shadow-2xl ${
                 isSpinning ? "wheel-transition" : "wheel-reset"
               }`}
               style={{
                 transform: `rotate(${rotation}deg)`,
-                transition: isSpinning ? `transform ${config.wheel.spinDuration}ms ${config.wheel.easing}` : 'transform 0.3s ease',
+                transition: isSpinning ? `transform ${appConfig.wheel.spinDuration}ms ${appConfig.wheel.easing}` : 'transform 0.3s ease',
               }}
             >
               <circle
                 cx={centerX}
                 cy={centerY}
                 r={radius + 15}
-                fill={`linear-gradient(135deg, ${config.theme.primaryColor}, ${config.theme.secondaryColor})`}
+                fill={`linear-gradient(135deg, ${appConfig.theme.primaryColor}, ${appConfig.theme.secondaryColor})`}
                 stroke="#fff"
-                strokeWidth={config.wheel.borderWidth}
+                strokeWidth={appConfig.wheel.borderWidth}
               />
 
               <defs>
@@ -206,8 +209,8 @@ const SpinWheel: React.FC<{
                   x2="100%"
                   y2="100%"
                 >
-                  <stop offset="0%" stopColor={config.theme.primaryColor} />
-                  <stop offset="100%" stopColor={config.theme.secondaryColor} />
+                  <stop offset="0%" stopColor={appConfig.theme.primaryColor} />
+                  <stop offset="100%" stopColor={appConfig.theme.secondaryColor} />
                 </linearGradient>
                 {participants.map((_, index) => (
                   <linearGradient
@@ -281,7 +284,7 @@ const SpinWheel: React.FC<{
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill={isWinningSegment ? "#000" : "#fff"}
-                      fontSize={isWinningSegment ? "16" : config.wheel.textSize}
+                      fontSize={isWinningSegment ? "16" : appConfig.wheel.textSize}
                       fontWeight="bold"
                       transform={`rotate(${midAngle}, ${textX}, ${textY})`}
                       className={`${
@@ -321,7 +324,7 @@ const SpinWheel: React.FC<{
           </div>
         </div>
 
-        <div className="flex gap-4">
+        <div className="flex flex-wrap gap-4 justify-center">
           <button
             onClick={onSpin}
             disabled={isSpinning || isWheelStopped || participants.length === 0}
@@ -373,6 +376,18 @@ const SpinWheel: React.FC<{
             <RotateCcw className="w-5 h-5" />
             Full Reset
           </button>
+
+          <Link
+            href="/customize"
+            className={`flex items-center gap-2 px-8 py-5 rounded-2xl ${
+              isDark
+                ? "bg-purple-900 hover:bg-purple-800"
+                : "bg-purple-600 hover:bg-purple-700"
+            } text-white cursor-pointer font-semibold transition-all duration-300 transform hover:scale-105`}
+          >
+            <Settings className="w-5 h-5" />
+            Customize
+          </Link>
         </div>
       </div>
     </div>

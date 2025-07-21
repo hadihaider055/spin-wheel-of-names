@@ -54,7 +54,7 @@ export const appConfig = {
 
   // Branding (optional - leave empty to hide)
   branding: {
-    logo: "/rtsc-logo-2.png", // Path to logo image
+    logo: null, // Path to logo image (optional) --- null to disable
     companyName: "",
     website: "",
     showPoweredBy: true,

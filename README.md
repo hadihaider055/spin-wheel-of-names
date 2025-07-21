@@ -144,14 +144,16 @@ The application automatically saves your data locally in your browser:
 ### Adding Participants
 
 Simply paste a list of names in the input field:
+
 ```
 John Doe
-Jane Smith  
+Jane Smith
 Bob Wilson
 Alice Johnson
 ```
 
 Or format with categories and grades:
+
 ```
 John Doe (Grade A, Sales Team)
 Jane Smith (Grade B, Marketing Team)
@@ -160,12 +162,14 @@ Jane Smith (Grade B, Marketing Team)
 ### Managing Participants & Winners
 
 **Participants:**
+
 - **Individual Delete**: Hover over any participant and click the trash icon
-- **Category Delete**: Click "Clear" button next to any category name  
+- **Category Delete**: Click "Clear" button next to any category name
 - **Clear All**: Click "Clear All" button to remove all participants
 - **Bulk Import**: Paste multiple names at once in the input field
 
 **Winners:**
+
 - **Individual Delete**: Hover over any winner and click the trash icon
 - **Clear All Winners**: Click "Clear All" button in winners section
 - **Persistent History**: Winners are saved across sessions (last 10)
@@ -189,14 +193,14 @@ Control which features are available in your app:
 // config/app.config.js
 features: {
   darkModeToggle: true,         // Show/hide dark mode button
-  exportResults: true,          // Enable result export functionality  
+  exportResults: true,          // Enable result export functionality
   historyTracking: true,        // Save winners history
   customColors: true,           // Allow color customization
   importParticipants: true,     // Allow bulk participant import
-  
+
   // Deletion Features (NEW)
   deleteParticipants: true,     // Individual participant delete buttons
-  deleteWinners: true,          // Individual winner delete buttons  
+  deleteWinners: true,          // Individual winner delete buttons
   clearAllParticipants: true,   // "Clear All" button for participants
   clearAllWinners: true,        // "Clear All" button for winners
   categoryManagement: true,     // Category-level "Clear" buttons
@@ -204,6 +208,7 @@ features: {
 ```
 
 ### Environment Variables
+
 ```bash
 # Disable specific features for production
 NEXT_PUBLIC_ENABLE_DELETE_WINNERS=false
@@ -287,7 +292,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - 🐛 [Report a bug](https://github.com/hadihaider055/spin-wheel-of-names/issues)
 - 💡 [Request a feature](https://github.com/hadihaider055/spin-wheel-of-names/issues)
-- 📖 [View documentation](https://github.com/hadihaider055/spin-wheel-of-names/wiki)
+- 📖 [View documentation](https://github.com/hadihaider055/spin-wheel-of-names/blob/main/CUSTOMIZATION.md)
 
 ---
 

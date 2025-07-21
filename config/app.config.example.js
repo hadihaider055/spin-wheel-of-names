@@ -55,7 +55,7 @@ export const appConfig = {
 
   // Your branding (optional)
   branding: {
-    logo: "/your-logo.png", // Path to your logo (put logo file in public folder)
+    logo: "/images/your-logo.png", // Path to your logo (put logo file in public folder)
     companyName: "Your Company Name",
     website: "https://your-website.com",
     showPoweredBy: false, // Set to false to hide "Powered by" text

@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import { Trophy, Gift, Star, Target, Volume2, VolumeX } from "lucide-react";
 
 // Utils
-import { config } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 interface BumperPrize {
   name: string;
@@ -25,14 +25,15 @@ const BumperPrizeModal: React.FC<BumperPrizeModalProps> = ({
   onSelectPrize,
   isDark,
 }) => {
+  const { appConfig } = useConfig();
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(false);
 
   useEffect(() => {
-    if (isVisible && config.bumperPrize.specialSound) {
+    if (isVisible && appConfig.bumperPrize.specialSound) {
       const timer = setTimeout(() => {
-        const bumperAudio = new Audio(config.bumperPrize.specialSound);
-        bumperAudio.volume = config.audio.volume;
+        const bumperAudio = new Audio(appConfig.bumperPrize.specialSound);
+        bumperAudio.volume = appConfig.audio.volume;
         bumperAudio.loop = false;
         setAudio(bumperAudio);
       }, 200);
@@ -79,8 +80,8 @@ const BumperPrizeModal: React.FC<BumperPrizeModalProps> = ({
 
   if (
     !isVisible ||
-    !config.features.bumperPrize ||
-    !config.bumperPrize.enabled
+    !appConfig.features.bumperPrize ||
+    !appConfig.bumperPrize.enabled
   ) {
     return null;
   }
@@ -93,7 +94,7 @@ const BumperPrizeModal: React.FC<BumperPrizeModalProps> = ({
     >
       <div
         className={`bg-gradient-to-br from-purple-500 via-pink-500 to-red-500 p-1 rounded-3xl shadow-2xl max-w-2xl w-full mx-auto ${
-          config.bumperPrize.showAnimation ? "animate-pulse" : ""
+          appConfig.bumperPrize.showAnimation ? "animate-pulse" : ""
         }`}
       >
         <div
@@ -101,7 +102,7 @@ const BumperPrizeModal: React.FC<BumperPrizeModalProps> = ({
             isDark ? "bg-gray-800" : "bg-white"
           } p-6 md:p-8 rounded-3xl text-center relative`}
         >
-          {config.bumperPrize.specialSound && (
+          {appConfig.bumperPrize.specialSound && (
             <button
               onClick={toggleMute}
               className={`absolute top-4 right-4 p-2 rounded-full ${
@@ -141,7 +142,7 @@ const BumperPrizeModal: React.FC<BumperPrizeModalProps> = ({
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-            {config.bumperPrize.prizes.map((prize, index) => (
+            {appConfig.bumperPrize.prizes.map((prize, index) => (
               <button
                 key={index}
                 onClick={() => onSelectPrize(prize)}

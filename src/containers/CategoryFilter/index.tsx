@@ -5,7 +5,7 @@ import { Filter, X, Check } from "lucide-react";
 
 // Utils
 import { Participant } from "@/utils/types/common";
-import { config } from "@/config/config";
+import { useConfig } from "@/contexts/ConfigContext";
 
 interface CategoryFilterProps {
   participants: Participant[];
@@ -20,9 +20,10 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   onCategoriesChange,
   isDark,
 }) => {
+  const { appConfig } = useConfig();
   const [isExpanded, setIsExpanded] = useState(false);
 
-  if (!config.features.categoryFiltering || !config.categoryFiltering.enabled) {
+  if (!appConfig.features.categoryFiltering || !appConfig.categoryFiltering.enabled) {
     return null;
   }
 
@@ -35,7 +36,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
   }
 
   const toggleCategory = (category: string) => {
-    if (config.categoryFiltering.allowMultipleCategories) {
+    if (appConfig.categoryFiltering.allowMultipleCategories) {
       if (selectedCategories.includes(category)) {
         onCategoriesChange(selectedCategories.filter((c) => c !== category));
       } else {
@@ -163,7 +164,7 @@ const CategoryFilter: React.FC<CategoryFilterProps> = ({
                     <span className="font-medium">{category}</span>
                   </div>
 
-                  {config.categoryFiltering.showCategoryStats && (
+                  {appConfig.categoryFiltering.showCategoryStats && (
                     <span
                       className={`text-sm px-2 py-1 rounded-full ${
                         isDark
