@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 
 // Types
 import { Participant } from "../types/common";
+import { config } from "@/config/config";
 
 const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
 
@@ -12,6 +13,8 @@ export const useSpinWheel = () => {
   const [rotation, setRotation] = useState(0);
   const [hoveredSegment, setHoveredSegment] = useState<number | null>(null);
   const [winners, setWinners] = useState<Participant[]>([]);
+  const [currentSpinAudio, setCurrentSpinAudio] =
+    useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
     const savedWinners = localStorage.getItem(WINNERS_STORAGE_KEY);
@@ -28,6 +31,23 @@ export const useSpinWheel = () => {
     localStorage.setItem(WINNERS_STORAGE_KEY, JSON.stringify(winners));
   }, [winners]);
 
+  useEffect(() => {
+    if (winner && currentSpinAudio) {
+      currentSpinAudio.pause();
+      currentSpinAudio.currentTime = 0;
+      setCurrentSpinAudio(null);
+    }
+  }, [winner, currentSpinAudio]);
+
+  useEffect(() => {
+    return () => {
+      if (currentSpinAudio) {
+        currentSpinAudio.pause();
+        currentSpinAudio.currentTime = 0;
+      }
+    };
+  }, [currentSpinAudio]);
+
   const spin = (participants: Participant[]) => {
     if (isSpinning || participants.length === 0) return;
 
@@ -36,8 +56,30 @@ export const useSpinWheel = () => {
     setWinner(null);
     setHoveredSegment(null);
 
-    const minRotation = 8 * 360;
-    const maxRotation = 15 * 360;
+    if (currentSpinAudio) {
+      currentSpinAudio.pause();
+      currentSpinAudio.currentTime = 0;
+      setCurrentSpinAudio(null);
+    }
+
+    if (config.wheel.enableSound && config.audio.spinSound) {
+      try {
+        const audio = new Audio(config.audio.spinSound);
+        audio.volume = config.audio.volume;
+        audio.loop = true;
+
+        setCurrentSpinAudio(audio);
+
+        audio
+          .play()
+          .then(() => {})
+          .catch(() => {});
+      } catch (error) {
+      }
+    }
+
+    const minRotation = config.wheel.minSpins * 360;
+    const maxRotation = config.wheel.maxSpins * 360;
     const randomRotation =
       Math.random() * (maxRotation - minRotation) + minRotation;
     const finalRotation = rotation + randomRotation;
@@ -45,6 +87,12 @@ export const useSpinWheel = () => {
     setRotation(finalRotation);
 
     setTimeout(() => {
+      if (currentSpinAudio) {
+        currentSpinAudio.pause();
+        currentSpinAudio.currentTime = 0;
+        setCurrentSpinAudio(null);
+      }
+
       setIsSpinning(false);
       setIsWheelStopped(true);
 
@@ -54,6 +102,12 @@ export const useSpinWheel = () => {
       setHoveredSegment(winnerIndex);
 
       setTimeout(() => {
+        if (currentSpinAudio) {
+          currentSpinAudio.pause();
+          currentSpinAudio.currentTime = 0;
+          setCurrentSpinAudio(null);
+        }
+
         const newWinner = participants[winnerIndex] || participants[0];
         setWinner(newWinner);
         setWinners((prevWinners) => {
@@ -62,7 +116,16 @@ export const useSpinWheel = () => {
         });
         setIsWheelStopped(false);
       }, 1000);
-    }, 5000);
+    }, config.wheel.spinDuration);
+  };
+
+  const removeWinner = (winnerId: string, winnerIndex: number) => {
+    setWinners((prevWinners) => {
+      const updatedWinners = prevWinners.filter(
+        (_, index) => index !== winnerIndex
+      );
+      return updatedWinners;
+    });
   };
 
   const clearWinners = () => {
@@ -70,7 +133,17 @@ export const useSpinWheel = () => {
     localStorage.removeItem(WINNERS_STORAGE_KEY);
   };
 
+  const stopAudio = () => {
+    if (currentSpinAudio) {
+      currentSpinAudio.pause();
+      currentSpinAudio.currentTime = 0;
+      setCurrentSpinAudio(null);
+    }
+  };
+
   const reset = () => {
+    stopAudio();
+
     setIsSpinning(false);
     setIsWheelStopped(false);
     setWinner(null);
@@ -87,6 +160,8 @@ export const useSpinWheel = () => {
     winners,
     spin,
     reset,
+    removeWinner,
     clearWinners,
+    stopAudio,
   };
 };

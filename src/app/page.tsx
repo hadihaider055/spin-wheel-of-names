@@ -9,12 +9,17 @@ import Navbar from "@/components/common/Navbar";
 import GiftSection from "@/containers/GiftSection";
 import SpinWheel from "@/containers/SpinWheel";
 import WinnerAnnouncement from "@/containers/WinnerAnnouncement";
+import BumperPrizeModal from "@/containers/BumperPrize";
+import CategoryFilter from "@/containers/CategoryFilter";
+import MultipleWinnersModal from "@/containers/MultipleWinners";
 
 // Utils
 import { parseParticipants } from "@/utils/functions/parseParticipants";
 import { useDarkMode } from "@/utils/hooks/useDarkMode";
 import { useSpinWheel } from "@/utils/hooks/useSpinningWheel";
 import { Participant } from "@/utils/types/common";
+import { config, applyTheme } from "@/config/config";
+import { Trash2 } from "lucide-react";
 
 const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
 const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
@@ -23,6 +28,10 @@ const BallotingApp: React.FC = () => {
   const [inputText, setInputText] = useState("");
   const [participants, setParticipants] = useState<Participant[]>([]);
   const [giftImage, setGiftImage] = useState<string | null>(null);
+  const [selectedCategories, setSelectedCategories] = useState<string[]>([]);
+  const [showBumperPrize, setShowBumperPrize] = useState(false);
+  const [bumperPrizeWinner, setBumperPrizeWinner] = useState<any>(null);
+  const [multipleWinners, setMultipleWinners] = useState<Participant[]>([]);
   const { isDark, toggleDarkMode } = useDarkMode();
   const {
     isSpinning,
@@ -33,10 +42,14 @@ const BallotingApp: React.FC = () => {
     spin,
     reset,
     winners,
+    removeWinner,
     clearWinners,
+    stopAudio,
   } = useSpinWheel();
 
   useEffect(() => {
+    applyTheme(isDark);
+
     const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
     const savedWinners = localStorage.getItem(WINNERS_STORAGE_KEY);
 
@@ -46,8 +59,18 @@ const BallotingApp: React.FC = () => {
       } catch (error) {
         console.error("Failed to parse saved participants", error);
       }
+    } else if (config.defaultParticipants.length > 0) {
+      const defaultParticipants = config.defaultParticipants.map(
+        (name, index) => ({
+          id: `default-${index}`,
+          name,
+          grade: "",
+          category: "Default Category",
+        })
+      );
+      setParticipants(defaultParticipants);
     }
-  }, []);
+  }, [isDark]);
 
   useEffect(() => {
     localStorage.setItem(
@@ -55,6 +78,19 @@ const BallotingApp: React.FC = () => {
       JSON.stringify(participants)
     );
   }, [participants]);
+
+  useEffect(() => {
+    if (winner) {
+      stopAudio();
+      
+      // Check for bumper prize trigger
+      if (config.features.bumperPrize && config.bumperPrize.enabled && 
+          winners.length >= config.bumperPrize.triggerAfter && 
+          (winners.length + 1) % config.bumperPrize.triggerAfter === 0) {
+        setShowBumperPrize(true);
+      }
+    }
+  }, [winner, stopAudio, winners.length]);
 
   const handleParseParticipants = () => {
     const { participants: newParticipants } = parseParticipants(inputText);
@@ -64,7 +100,13 @@ const BallotingApp: React.FC = () => {
 
   const handleSpin = () => {
     if (!isSpinning && !isWheelStopped && participants.length > 0) {
-      spin(participants);
+      const filteredParticipants = selectedCategories.length > 0
+        ? participants.filter(p => selectedCategories.includes(p.category))
+        : participants;
+      
+      if (filteredParticipants.length > 0) {
+        spin(filteredParticipants);
+      }
     }
   };
 
@@ -85,6 +127,75 @@ const BallotingApp: React.FC = () => {
     reset();
   };
 
+  const handleDeleteParticipant = (participantId: string) => {
+    const participantToDelete = participants.find(
+      (p) => p.id === participantId
+    );
+    if (
+      participantToDelete &&
+      window.confirm(`Remove "${participantToDelete.name}" from the list?`)
+    ) {
+      setParticipants((prevParticipants) =>
+        prevParticipants.filter((p) => p.id !== participantId)
+      );
+    }
+  };
+
+  const handleDeleteCategory = (category: string) => {
+    const participantsInCategory = participants.filter(
+      (p) => p.category === category
+    );
+    if (
+      participantsInCategory.length > 0 &&
+      window.confirm(
+        `Remove all ${participantsInCategory.length} participants from "${category}"?`
+      )
+    ) {
+      setParticipants((prevParticipants) =>
+        prevParticipants.filter((p) => p.category !== category)
+      );
+    }
+  };
+
+  const handleClearAllParticipants = () => {
+    if (
+      participants.length > 0 &&
+      window.confirm(
+        `Remove all ${participants.length} participants from the list?`
+      )
+    ) {
+      setParticipants([]);
+    }
+  };
+
+  const handleRemoveWinner = (winnerIndex: number) => {
+    const winnerToRemove = winners[winnerIndex];
+    if (
+      winnerToRemove &&
+      window.confirm(`Remove "${winnerToRemove.name}" from winners history?`)
+    ) {
+      removeWinner(winnerToRemove.id, winnerIndex);
+    }
+  };
+
+  const handleClearAllWinners = () => {
+    if (
+      winners.length > 0 &&
+      window.confirm(`Clear all ${winners.length} winners from history?`)
+    ) {
+      clearWinners();
+    }
+  };
+
+  const handleBumperPrizeSelect = (prize: any) => {
+    setBumperPrizeWinner({ ...winner, prize });
+    setShowBumperPrize(false);
+  };
+
+  const handleBumperPrizeClose = () => {
+    setShowBumperPrize(false);
+  };
+
   const handleFullReset = () => {
     if (
       window.confirm(
@@ -94,6 +205,9 @@ const BallotingApp: React.FC = () => {
       setInputText("");
       setParticipants([]);
       setGiftImage(null);
+      setSelectedCategories([]);
+      setMultipleWinners([]);
+      setBumperPrizeWinner(null);
 
       localStorage.removeItem(PARTICIPANTS_STORAGE_KEY);
       localStorage.removeItem(WINNERS_STORAGE_KEY);
@@ -134,6 +248,13 @@ const BallotingApp: React.FC = () => {
           handleFullReset={handleFullReset}
         />
 
+        <CategoryFilter
+          participants={participants}
+          selectedCategories={selectedCategories}
+          onCategoriesChange={setSelectedCategories}
+          isDark={isDark}
+        />
+
         <Input
           value={inputText}
           onChange={setInputText}
@@ -152,13 +273,30 @@ const BallotingApp: React.FC = () => {
           >
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
               <div>
-                <h3
-                  className={`text-2xl font-bold ${
-                    isDark ? "text-white" : "text-gray-800"
-                  } mb-6`}
-                >
-                  Loaded Participants
-                </h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3
+                    className={`text-2xl font-bold ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    Loaded Participants ({participants.length})
+                  </h3>
+                  {participants.length > 0 &&
+                    config.features.clearAllParticipants && (
+                      <button
+                        onClick={handleClearAllParticipants}
+                        disabled={isSpinning}
+                        className={`text-sm px-3 py-1 rounded-lg transition-colors ${
+                          isDark
+                            ? "text-red-400 hover:bg-red-900 border border-red-700"
+                            : "text-red-600 hover:bg-red-50 border border-red-200"
+                        } disabled:opacity-50 disabled:cursor-not-allowed`}
+                        title="Clear all participants"
+                      >
+                        Clear All
+                      </button>
+                    )}
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   {Array.from(new Set(participants.map((p) => p.category))).map(
                     (category) => (
@@ -170,13 +308,35 @@ const BallotingApp: React.FC = () => {
                             : "bg-gradient-to-br from-indigo-50 to-purple-50 border-indigo-100"
                         } p-4 rounded-xl border`}
                       >
-                        <h4
-                          className={`font-bold ${
-                            isDark ? "text-purple-300" : "text-indigo-800"
-                          } mb-3`}
-                        >
-                          {category}
-                        </h4>
+                        <div className="flex items-center justify-between mb-3">
+                          <h4
+                            className={`font-bold ${
+                              isDark ? "text-purple-300" : "text-indigo-800"
+                            }`}
+                          >
+                            {category} (
+                            {
+                              participants.filter(
+                                (p) => p.category === category
+                              ).length
+                            }
+                            )
+                          </h4>
+                          {config.features.categoryManagement && (
+                            <button
+                              onClick={() => handleDeleteCategory(category)}
+                              disabled={isSpinning}
+                              className={`text-xs px-2 py-1 rounded transition-colors ${
+                                isDark
+                                  ? "text-red-400 hover:bg-red-900"
+                                  : "text-red-500 hover:bg-red-100"
+                              } disabled:opacity-50 disabled:cursor-not-allowed`}
+                              title={`Clear ${category} category`}
+                            >
+                              Clear
+                            </button>
+                          )}
+                        </div>
                         <div className="space-y-2">
                           {participants
                             .filter((p) => p.category === category)
@@ -185,22 +345,42 @@ const BallotingApp: React.FC = () => {
                                 key={participant.id}
                                 className={`text-sm ${
                                   isDark ? "bg-gray-700" : "bg-white"
-                                } p-2 rounded-lg shadow-sm`}
+                                } p-2 rounded-lg shadow-sm flex items-center justify-between group`}
                               >
-                                <span
-                                  className={`font-semibold ${
-                                    isDark ? "text-white" : "text-gray-900"
-                                  }`}
-                                >
-                                  {participant.name}
-                                </span>
-                                <span
-                                  className={`${
-                                    isDark ? "text-gray-300" : "text-gray-600"
-                                  } ml-2`}
-                                >
-                                  ({participant.grade})
-                                </span>
+                                <div>
+                                  <span
+                                    className={`font-semibold ${
+                                      isDark ? "text-white" : "text-gray-900"
+                                    }`}
+                                  >
+                                    {participant.name}
+                                  </span>
+                                  {participant.grade && participant.grade.trim() !== "" && (
+                                    <span
+                                      className={`${
+                                        isDark ? "text-gray-300" : "text-gray-600"
+                                      } ml-2`}
+                                    >
+                                      ({participant.grade})
+                                    </span>
+                                  )}
+                                </div>
+                                {config.features.deleteParticipants && (
+                                  <button
+                                    onClick={() =>
+                                      handleDeleteParticipant(participant.id)
+                                    }
+                                    disabled={isSpinning}
+                                    className={`opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-full hover:scale-110 ${
+                                      isDark
+                                        ? "hover:bg-red-900 text-red-400 hover:text-red-300"
+                                        : "hover:bg-red-100 text-red-500 hover:text-red-700"
+                                    } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                    title={`Remove ${participant.name} (Click to delete)`}
+                                  >
+                                    <Trash2 className="w-3 h-3" />
+                                  </button>
+                                )}
                               </div>
                             ))}
                         </div>
@@ -211,13 +391,29 @@ const BallotingApp: React.FC = () => {
               </div>
 
               <div>
-                <h3
-                  className={`text-2xl font-bold ${
-                    isDark ? "text-white" : "text-gray-800"
-                  } mb-6`}
-                >
-                  Previous Winners
-                </h3>
+                <div className="flex items-center justify-between mb-6">
+                  <h3
+                    className={`text-2xl font-bold ${
+                      isDark ? "text-white" : "text-gray-800"
+                    }`}
+                  >
+                    Previous Winners ({winners.length})
+                  </h3>
+                  {winners.length > 0 && config.features.clearAllWinners && (
+                    <button
+                      onClick={handleClearAllWinners}
+                      disabled={isSpinning}
+                      className={`text-sm px-3 py-1 rounded-lg transition-colors ${
+                        isDark
+                          ? "text-red-400 hover:bg-red-900 border border-red-700"
+                          : "text-red-600 hover:bg-red-50 border border-red-200"
+                      } disabled:opacity-50 disabled:cursor-not-allowed`}
+                      title="Clear all winners"
+                    >
+                      Clear All
+                    </button>
+                  )}
+                </div>
                 <div
                   className={`${
                     isDark ? "bg-gray-700" : "bg-gray-100"
@@ -238,7 +434,7 @@ const BallotingApp: React.FC = () => {
                               : "bg-white"
                           }`}
                         >
-                          <div className="flex justify-between items-center">
+                          <div className="flex justify-between items-center group">
                             <div>
                               <p
                                 className={`font-bold ${
@@ -247,19 +443,37 @@ const BallotingApp: React.FC = () => {
                               >
                                 {winner.name}
                               </p>
-                              <p
-                                className={`text-sm ${
-                                  isDark ? "text-gray-300" : "text-gray-600"
-                                }`}
-                              >
-                                Class: {winner.grade}
-                              </p>
+                              {winner.grade && winner.grade.trim() !== "" && (
+                                <p
+                                  className={`text-sm ${
+                                    isDark ? "text-gray-300" : "text-gray-600"
+                                  }`}
+                                >
+                                  Class: {winner.grade}
+                                </p>
+                              )}
                             </div>
-                            {index === 0 && (
-                              <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
-                                NEW!
-                              </span>
-                            )}
+                            <div className="flex items-center gap-2">
+                              {index === 0 && (
+                                <span className="bg-yellow-500 text-white text-xs font-bold px-2 py-1 rounded-full">
+                                  NEW!
+                                </span>
+                              )}
+                              {config.features.deleteWinners && (
+                                <button
+                                  onClick={() => handleRemoveWinner(index)}
+                                  disabled={isSpinning}
+                                  className={`opacity-0 group-hover:opacity-100 transition-all duration-200 p-1 rounded-full hover:scale-110 ${
+                                    isDark
+                                      ? "hover:bg-red-900 text-red-400 hover:text-red-300"
+                                      : "hover:bg-red-100 text-red-500 hover:text-red-700"
+                                  } disabled:opacity-50 disabled:cursor-not-allowed`}
+                                  title={`Remove ${winner.name} from winners`}
+                                >
+                                  <Trash2 className="w-3 h-3" />
+                                </button>
+                              )}
+                            </div>
                           </div>
                         </div>
                       ))}
@@ -280,10 +494,26 @@ const BallotingApp: React.FC = () => {
         )}
       </div>
 
-      {winner && (
+      {winner && !showBumperPrize && (
         <WinnerAnnouncement
           winner={winner}
           onClose={handleWinnerClose}
+          isDark={isDark}
+          giftImage={giftImage}
+        />
+      )}
+
+      <BumperPrizeModal
+        isVisible={showBumperPrize}
+        onClose={handleBumperPrizeClose}
+        onSelectPrize={handleBumperPrizeSelect}
+        isDark={isDark}
+      />
+
+      {multipleWinners.length > 0 && (
+        <MultipleWinnersModal
+          winners={multipleWinners}
+          onClose={() => setMultipleWinners([])}
           isDark={isDark}
           giftImage={giftImage}
         />

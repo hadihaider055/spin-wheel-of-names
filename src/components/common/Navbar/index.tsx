@@ -1,3 +1,5 @@
+import { config } from "@/config/config";
+
 const Navbar: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   return (
     <div className="relative overflow-hidden">
@@ -15,24 +17,39 @@ const Navbar: React.FC<{ isDark: boolean }> = ({ isDark }) => {
       <div className="relative z-10 max-w-7xl mx-auto px-6 py-8">
         <div className="text-center">
           <div className="flex items-center justify-center mb-4">
-            <img
-              src="/rtsc-logo-2.png"
-              alt="RTSC Logo"
-              className="w-20 h-20 mr-4"
-            />
-            <h1 className="text-4xl md:text-5xl font-bold text-white tracking-wide">
-              Knowledge Forum
+            {config.branding.logo && (
+              <img
+                src={config.branding.logo}
+                alt={`${config.branding.companyName || config.title} Logo`}
+                className="w-16 h-16 md:w-20 md:h-20 mr-3 md:mr-4 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-bold text-white tracking-wide text-center">
+              {config.title}
             </h1>
-            <img
-              src="/kf-logo-2.png"
-              alt="RTSC Logo"
-              className="w-20 h-20 mr-4"
-            />
+            {config.branding.logo && (
+              <img
+                src={config.branding.logo}
+                alt={`${config.branding.companyName || config.title} Logo`}
+                className="w-16 h-16 md:w-20 md:h-20 ml-3 md:ml-4 object-contain"
+                onError={(e) => {
+                  e.currentTarget.style.display = 'none';
+                }}
+              />
+            )}
           </div>
           <div className="bg-white/10 backdrop-blur-sm rounded-full px-8 py-3 inline-block">
             <p className="text-xl md:text-2xl text-white font-semibold">
-              Round Table Summer Camp 2025
+              {config.description}
             </p>
+            {config.branding.companyName && (
+              <p className="text-lg text-white/80 mt-2">
+                {config.branding.companyName}
+              </p>
+            )}
           </div>
         </div>
       </div>

@@ -28,7 +28,7 @@ export const parseParticipants = (text: string): ParsedData => {
         participants.push({
           id: `${Date.now()}-${Math.random()}-${participants.length}`,
           name: trimmedLine,
-          grade: "N/A",
+          grade: "",
           category: currentCategory,
         });
       }

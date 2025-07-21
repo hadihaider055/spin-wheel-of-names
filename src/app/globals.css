@@ -3,6 +3,24 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  
+  /* App Configuration CSS Variables */
+  --primary-color: #3b82f6;
+  --secondary-color: #10b981;
+  --background-color: #ffffff;
+  --text-color: #1f2937;
+  
+  /* Dark mode colors */
+  --dark-background-color: #1f2937;
+  --dark-text-color: #f9fafb;
+  --dark-primary-color: #60a5fa;
+  --dark-secondary-color: #34d399;
+  
+  /* Wheel configuration */
+  --wheel-size: 400px;
+  --wheel-border-width: 4px;
+  --wheel-text-size: 16px;
+  --spin-duration: 3000ms;
 }
 
 @theme inline {
@@ -20,15 +38,107 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
+  background: var(--background-color);
+  color: var(--text-color);
   font-family: Arial, Helvetica, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
+body.dark {
+  background: var(--dark-background-color);
+  color: var(--dark-text-color);
+}
+
+/* Configurable wheel animations */
 .wheel-transition {
-  transition: transform 4s cubic-bezier(0.17, 0.67, 0.12, 0.99);
+  transition: transform var(--spin-duration) cubic-bezier(0.17, 0.67, 0.12, 0.99);
 }
 
 .wheel-reset {
   transition: transform 1s ease-out;
+}
+
+/* Utility classes for configuration */
+.primary-color {
+  color: var(--primary-color);
+}
+
+.secondary-color {
+  color: var(--secondary-color);
+}
+
+.bg-primary {
+  background-color: var(--primary-color);
+}
+
+.bg-secondary {
+  background-color: var(--secondary-color);
+}
+
+/* Confetti animation for winner announcement */
+@keyframes confetti-fall {
+  0% {
+    transform: translateY(-100vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(100vh) rotate(360deg);
+    opacity: 0;
+  }
+}
+
+.confetti {
+  position: fixed;
+  width: 10px;
+  height: 10px;
+  background: var(--primary-color);
+  animation: confetti-fall 3s linear infinite;
+  z-index: 100;
+}
+
+/* Winner announcement animations */
+@keyframes fadeInScale {
+  0% {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes slideIn {
+  0% {
+    opacity: 0;
+    transform: translateY(-50px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes bounce {
+  0%, 20%, 50%, 80%, 100% {
+    transform: translateY(0);
+  }
+  40% {
+    transform: translateY(-30px);
+  }
+  60% {
+    transform: translateY(-15px);
+  }
+}
+
+.animate-fadeInScale {
+  animation: fadeInScale 0.5s ease-out;
+}
+
+.animate-slideIn {
+  animation: slideIn 0.5s ease-out;
+}
+
+.animate-bounce-custom {
+  animation: bounce 1s infinite;
 }

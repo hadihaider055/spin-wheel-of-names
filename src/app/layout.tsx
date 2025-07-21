@@ -13,11 +13,25 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "RTSC 2025 | Result Ceremony",
+  title: "Spin Wheel of Names",
   description:
-    "Developed by Hadi Haider, for RTSC 2025 Result Ceremony Balloting for Bumper Prizes.",
+    "A customizable, open-source spin wheel application for giveaways, contests, and decision making. Built with Next.js and React.",
+  authors: [{ name: "Hadi Haider", url: "https://linkedin.com/in/hadi-haider" }],
+  keywords: ["spin wheel", "random picker", "giveaway", "contest", "decision maker", "names", "lottery"],
+  openGraph: {
+    title: "Spin Wheel of Names",
+    description: "A customizable spin wheel for giveaways and contests",
+    url: "https://github.com/hadihaider055/spin-wheel-of-names",
+    siteName: "Spin Wheel of Names",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Spin Wheel of Names",
+    description: "A customizable spin wheel for giveaways and contests",
+  },
   icons: {
-    icon: "/rtsc-logo-2.png",
+    icon: "/favicon.ico",
   },
 };
 

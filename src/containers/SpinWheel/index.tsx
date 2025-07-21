@@ -8,6 +8,7 @@ import { Trophy, Users, Play, RotateCcw } from "lucide-react";
 // Utils
 import { generateGradientColors } from "@/utils/functions/generateGradientColors";
 import { Participant } from "@/utils/types/common";
+import { config, getWheelColors } from "@/config/config";
 
 const SpinWheel: React.FC<{
   participants: Participant[];
@@ -58,11 +59,11 @@ const SpinWheel: React.FC<{
     );
   }
 
-  const colors = generateGradientColors(participants.length);
+  const colors = getWheelColors('default');
   const segmentAngle = 360 / participants.length;
-  const radius = 250;
-  const centerX = 300;
-  const centerY = 300;
+  const radius = config.wheel.wheelSize / 2 - 50;
+  const centerX = config.wheel.wheelSize / 2;
+  const centerY = config.wheel.wheelSize / 2;
 
   const createSegmentPath = (startAngle: number, endAngle: number) => {
     const startAngleRad = (startAngle * Math.PI) / 180;
@@ -178,22 +179,23 @@ const SpinWheel: React.FC<{
           <div className="relative">
             <svg
               ref={wheelRef}
-              width="600"
-              height="600"
+              width={config.wheel.wheelSize}
+              height={config.wheel.wheelSize}
               className={`drop-shadow-2xl ${
                 isSpinning ? "wheel-transition" : "wheel-reset"
               }`}
               style={{
                 transform: `rotate(${rotation}deg)`,
+                transition: isSpinning ? `transform ${config.wheel.spinDuration}ms ${config.wheel.easing}` : 'transform 0.3s ease',
               }}
             >
               <circle
                 cx={centerX}
                 cy={centerY}
                 r={radius + 15}
-                fill="url(#outerGradient)"
+                fill={`linear-gradient(135deg, ${config.theme.primaryColor}, ${config.theme.secondaryColor})`}
                 stroke="#fff"
-                strokeWidth="4"
+                strokeWidth={config.wheel.borderWidth}
               />
 
               <defs>
@@ -204,8 +206,8 @@ const SpinWheel: React.FC<{
                   x2="100%"
                   y2="100%"
                 >
-                  <stop offset="0%" stopColor="#ffd700" />
-                  <stop offset="100%" stopColor="#ffed4e" />
+                  <stop offset="0%" stopColor={config.theme.primaryColor} />
+                  <stop offset="100%" stopColor={config.theme.secondaryColor} />
                 </linearGradient>
                 {participants.map((_, index) => (
                   <linearGradient
@@ -218,11 +220,11 @@ const SpinWheel: React.FC<{
                   >
                     <stop
                       offset="0%"
-                      stopColor={`hsl(${(index * 137.5) % 360}, 70%, 60%)`}
+                      stopColor={colors[index % colors.length]}
                     />
                     <stop
                       offset="100%"
-                      stopColor={`hsl(${(index * 137.5 + 30) % 360}, 80%, 45%)`}
+                      stopColor={colors[(index + 1) % colors.length]}
                     />
                   </linearGradient>
                 ))}
@@ -279,7 +281,7 @@ const SpinWheel: React.FC<{
                       textAnchor="middle"
                       dominantBaseline="middle"
                       fill={isWinningSegment ? "#000" : "#fff"}
-                      fontSize={isWinningSegment ? "16" : "14"}
+                      fontSize={isWinningSegment ? "16" : config.wheel.textSize}
                       fontWeight="bold"
                       transform={`rotate(${midAngle}, ${textX}, ${textY})`}
                       className={`${
@@ -288,19 +290,21 @@ const SpinWheel: React.FC<{
                     >
                       {participant.name}
                     </text>
-                    <text
-                      x={gradeX}
-                      y={gradeY + 8}
-                      textAnchor="middle"
-                      dominantBaseline="middle"
-                      fill={isWinningSegment ? "#000" : "#fff"}
-                      fontSize={isWinningSegment ? "13" : "11"}
-                      fontWeight="600"
-                      transform={`rotate(${midAngle}, ${gradeX}, ${gradeY})`}
-                      className={isWinningSegment ? "animate-pulse" : ""}
-                    >
-                      ({participant.grade})
-                    </text>
+                    {participant.grade && participant.grade.trim() !== "" && (
+                      <text
+                        x={gradeX}
+                        y={gradeY + 8}
+                        textAnchor="middle"
+                        dominantBaseline="middle"
+                        fill={isWinningSegment ? "#000" : "#fff"}
+                        fontSize={isWinningSegment ? "13" : "11"}
+                        fontWeight="600"
+                        transform={`rotate(${midAngle}, ${gradeX}, ${gradeY})`}
+                        className={isWinningSegment ? "animate-pulse" : ""}
+                      >
+                        ({participant.grade})
+                      </text>
+                    )}
                   </g>
                 );
               })}

@@ -1,7 +1,28 @@
 {
-  "name": "rtsc-balloting",
-  "version": "0.1.0",
-  "private": true,
+  "name": "spin-wheel-of-names",
+  "version": "1.0.0",
+  "description": "A customizable, open-source spin wheel application for giveaways, contests, and decision making",
+  "author": "Hadi Haider <haiderhadi055@gmail.com>",
+  "license": "MIT",
+  "homepage": "https://github.com/hadihaider055/spin-wheel-of-names#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hadihaider055/spin-wheel-of-names.git"
+  },
+  "bugs": {
+    "url": "https://github.com/hadihaider055/spin-wheel-of-names/issues"
+  },
+  "keywords": [
+    "spin-wheel",
+    "random-picker",
+    "giveaway",
+    "contest",
+    "decision-maker",
+    "nextjs",
+    "react",
+    "typescript"
+  ],
+  "private": false,
   "scripts": {
     "dev": "next dev --turbopack",
     "build": "next build",
