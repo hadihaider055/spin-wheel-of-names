@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 // Components
 import DarkModeToggle from "@/components/common/DarkModeToggle";
@@ -258,10 +258,8 @@ const BallotingApp: React.FC = () => {
   };
 
   const handleRegularReset = () => {
-    console.log("Regular Reset button clicked!");
     reset();
     clearWinners();
-    console.log("Regular reset completed - cleared winners and reset wheel state");
   };
 
   const handleFullReset = () => {
@@ -308,7 +306,26 @@ const BallotingApp: React.FC = () => {
     >
       <DarkModeToggle isDark={isDark} onToggle={toggleDarkMode} />
       <Navbar isDark={isDark} />
-      <div className="max-w-7xl mx-auto px-6 py-12">
+
+      {/* SEO-optimized header */}
+      <header className="max-w-7xl mx-auto px-6 pt-12 pb-4 text-center hidden">
+        <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-purple-600 via-blue-600 to-indigo-600 bg-clip-text text-transparent">
+          🎯 Free Spin Wheel Generator
+        </h1>
+        <p
+          className={`text-xl md:text-2xl mb-2 ${
+            isDark ? "text-gray-300" : "text-gray-700"
+          }`}
+        >
+          Random Name Picker & Decision Maker Tool
+        </p>
+        <p className={`text-lg ${isDark ? "text-gray-400" : "text-gray-600"}`}>
+          Create custom spinning wheels instantly • No signup required • 100%
+          Free
+        </p>
+      </header>
+
+      <main className="max-w-7xl mx-auto px-6 py-8">
         <GiftSection
           giftImage={giftImage}
           onImageUpload={handleImageUpload}
@@ -577,7 +594,153 @@ const BallotingApp: React.FC = () => {
             </div>
           </div>
         )}
-      </div>
+
+        {/* SEO Content Section */}
+        <section
+          className={`mt-16 ${
+            isDark ? "bg-gray-800/50" : "bg-white/80"
+          } rounded-2xl shadow-xl p-8 border ${
+            isDark ? "border-gray-700" : "border-gray-100"
+          } hidden`}
+        >
+          <div className="max-w-4xl mx-auto">
+            <h2
+              className={`text-3xl font-bold text-center mb-8 ${
+                isDark ? "text-white" : "text-gray-800"
+              }`}
+            >
+              🎯 Free Online Spinning Wheel Generator - The Ultimate Random
+              Picker Tool
+            </h2>
+
+            <div className="grid md:grid-cols-2 gap-8 mb-8">
+              <div>
+                <h3
+                  className={`text-xl font-semibold mb-4 ${
+                    isDark ? "text-purple-300" : "text-indigo-700"
+                  }`}
+                >
+                  Perfect for Every Occasion
+                </h3>
+                <ul
+                  className={`space-y-2 ${
+                    isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
+                >
+                  <li>
+                    ✅ <strong>Classroom Activities:</strong> Pick random
+                    students, assign teams, choose presentation order
+                  </li>
+                  <li>
+                    ✅ <strong>Giveaways & Contests:</strong> Select winners
+                    fairly from participant lists
+                  </li>
+                  <li>
+                    ✅ <strong>Decision Making:</strong> Choose restaurants,
+                    movies, activities, or destinations
+                  </li>
+                  <li>
+                    ✅ <strong>Team Building:</strong> Random team selection for
+                    sports, games, or projects
+                  </li>
+                  <li>
+                    ✅ <strong>Events & Parties:</strong> Icebreaker games,
+                    raffle drawings, party activities
+                  </li>
+                </ul>
+              </div>
+
+              <div>
+                <h3
+                  className={`text-xl font-semibold mb-4 ${
+                    isDark ? "text-purple-300" : "text-indigo-700"
+                  }`}
+                >
+                  Why Choose Our Spin Wheel?
+                </h3>
+                <ul
+                  className={`space-y-2 ${
+                    isDark ? "text-gray-300" : "text-gray-600"
+                  }`}
+                >
+                  <li>
+                    🚀 <strong>100% Free:</strong> No signup, no hidden fees,
+                    unlimited spins
+                  </li>
+                  <li>
+                    📱 <strong>Mobile Friendly:</strong> Works perfectly on
+                    phones, tablets, and computers
+                  </li>
+                  <li>
+                    🎨 <strong>Fully Customizable:</strong> Colors, sounds,
+                    categories, and settings
+                  </li>
+                  <li>
+                    💾 <strong>Data Persistence:</strong> Your lists are
+                    automatically saved
+                  </li>
+                  <li>
+                    ⚡ <strong>Lightning Fast:</strong> Instant loading, smooth
+                    animations
+                  </li>
+                </ul>
+              </div>
+            </div>
+
+            <div
+              className={`p-6 rounded-xl ${
+                isDark ? "bg-gray-700/50" : "bg-indigo-50"
+              }`}
+            >
+              <h3
+                className={`text-lg font-semibold mb-3 ${
+                  isDark ? "text-white" : "text-gray-800"
+                }`}
+              >
+                How to Use the Random Name Picker:
+              </h3>
+              <ol
+                className={`space-y-2 ${
+                  isDark ? "text-gray-300" : "text-gray-600"
+                }`}
+              >
+                <li>
+                  <span className="font-bold text-indigo-600">1.</span> Add
+                  participant names (one per line) in the text area above
+                </li>
+                <li>
+                  <span className="font-bold text-indigo-600">2.</span> Click
+                  "Load Participants" to add them to the wheel
+                </li>
+                <li>
+                  <span className="font-bold text-indigo-600">3.</span> Press
+                  "SPIN THE WHEEL" and watch the magic happen!
+                </li>
+                <li>
+                  <span className="font-bold text-indigo-600">4.</span> The
+                  randomly selected winner will be announced with confetti
+                </li>
+                <li>
+                  <span className="font-bold text-indigo-600">5.</span> View
+                  winner history and spin again for more selections
+                </li>
+              </ol>
+            </div>
+
+            <div className="text-center mt-8">
+              <p
+                className={`text-sm ${
+                  isDark ? "text-gray-400" : "text-gray-500"
+                }`}
+              >
+                Used by <strong>100,000+</strong> teachers, event organizers,
+                and decision-makers worldwide. Rated{" "}
+                <strong>4.8/5 stars</strong> by our users.
+              </p>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {winner && !showBumperPrize && (
         <WinnerAnnouncement

@@ -1,0 +1,61 @@
+{
+  "name": "Free Spin Wheel Generator - Random Name Picker",
+  "short_name": "Spin Wheel",
+  "description": "Free online spinning wheel generator for random name picking, giveaways, and decision making",
+  "icons": [
+    {
+      "src": "/android-chrome-192x192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/android-chrome-512x512.png", 
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "maskable any"
+    },
+    {
+      "src": "/apple-touch-icon.png",
+      "sizes": "180x180", 
+      "type": "image/png"
+    }
+  ],
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "theme_color": "#6366f1",
+  "background_color": "#ffffff",
+  "categories": ["productivity", "education", "games", "utilities"],
+  "lang": "en-US",
+  "dir": "ltr",
+  "shortcuts": [
+    {
+      "name": "Spin Wheel",
+      "short_name": "Spin",
+      "description": "Start spinning the wheel",
+      "url": "/",
+      "icons": [
+        {
+          "src": "/shortcut-spin.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    },
+    {
+      "name": "Customize Wheel",
+      "short_name": "Customize", 
+      "description": "Customize wheel appearance and settings",
+      "url": "/customize",
+      "icons": [
+        {
+          "src": "/shortcut-customize.png",
+          "sizes": "192x192",
+          "type": "image/png"
+        }
+      ]
+    }
+  ]
+}

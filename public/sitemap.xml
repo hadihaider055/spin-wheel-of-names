@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" 
+        xmlns:image="http://www.google.com/schemas/sitemap-image/1.1"
+        xmlns:news="http://www.google.com/schemas/sitemap-news/0.9">
+  
+  <!-- Main spinning wheel page -->
+  <url>
+    <loc>https://spin-wheel-of-names.netlify.app/</loc>
+    <lastmod>2025-01-21</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>1.0</priority>
+    <image:image>
+      <image:loc>https://spin-wheel-of-names.netlify.app/app-screenshot.png</image:loc>
+      <image:caption>Free Spin Wheel Generator - Random Name Picker Tool</image:caption>
+      <image:title>Spinning Wheel Generator Interface</image:title>
+    </image:image>
+  </url>
+
+  <!-- Customization page -->
+  <url>
+    <loc>https://spin-wheel-of-names.netlify.app/customize</loc>
+    <lastmod>2025-01-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.8</priority>
+    <image:image>
+      <image:loc>https://spin-wheel-of-names.netlify.app/customize-screenshot.png</image:loc>
+      <image:caption>Customize Your Spinning Wheel - Colors, Sounds, Settings</image:caption>
+      <image:title>Wheel Customization Interface</image:title>
+    </image:image>
+  </url>
+
+  <!-- FAQ page (if you create one) -->
+  <url>
+    <loc>https://spin-wheel-of-names.netlify.app/faq</loc>
+    <lastmod>2025-01-21</lastmod>
+    <changefreq>monthly</changefreq>
+    <priority>0.6</priority>
+  </url>
+
+  <!-- Privacy Policy (if you create one) -->
+  <url>
+    <loc>https://spin-wheel-of-names.netlify.app/privacy</loc>
+    <lastmod>2025-01-21</lastmod>
+    <changefreq>yearly</changefreq>
+    <priority>0.3</priority>
+  </url>
+
+</urlset>
