@@ -24,6 +24,8 @@ interface ConfigContextType {
   resetToDefaults: () => void;
   hasCustomizations: boolean;
   isHydrated: boolean;
+  isDark: boolean;
+  toggleDarkMode: () => void;
 }
 
 const ConfigContext = createContext<ConfigContextType | undefined>(undefined);
@@ -38,6 +40,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
   const [appConfig, setAppConfig] = useState<AppConfig>(config);
   const [hasCustomizations, setHasCustomizations] = useState(false);
   const [isHydrated, setIsHydrated] = useState(false);
+  const [isDark, setIsDark] = useState(false);
+  const toggleDarkMode = () => setIsDark((d) => !d);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -161,6 +165,8 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
     resetToDefaults,
     hasCustomizations,
     isHydrated,
+    isDark,
+    toggleDarkMode,
   };
 
   return (

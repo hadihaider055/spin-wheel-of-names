@@ -35,13 +35,6 @@ export interface CustomConfig {
 
 const CustomizeContainer: React.FC = () => {
   const [activeTab, setActiveTab] = useState("appearance");
-  const [isDark, setIsDark] = useState(true);
-
-  const toggleDarkMode = () => setIsDark(!isDark);
-
-  useEffect(() => {
-    applyTheme(isDark);
-  }, [isDark]);
 
   const {
     appConfig,
@@ -49,7 +42,13 @@ const CustomizeContainer: React.FC = () => {
     resetToDefaults,
     hasCustomizations,
     isHydrated,
+    isDark,
+    toggleDarkMode,
   } = useConfig();
+
+  useEffect(() => {
+    applyTheme(isDark);
+  }, [isDark]);
 
   const buildCustomConfig = (cfg: typeof appConfig): CustomConfig => ({
     title: cfg.title,

@@ -1,27 +1,27 @@
 "use client";
 
 import { useState, useRef, useEffect, useCallback } from "react";
-import { Video, Square, Download, Mic, MicOff, X, Circle, Camera, CameraOff, GripVertical } from "lucide-react";
+import { Video, Square, Download, Mic, MicOff, X, Circle, Camera, CameraOff, GripVertical, Pause, Play } from "lucide-react";
 
 type RecordingState = "idle" | "requesting" | "recording" | "stopped";
 
-
 // Defined at module level so its identity is stable across renders.
 // If defined inside ScreenRecorder, React treats it as a NEW component type
-// on every render (60fps from mic analyser), unmounting+remounting the button
-// mid-click and swallowing the event.
+// on every render, unmounting+remounting the button mid-click and swallowing the event.
 const Toggle: React.FC<{
   enabled: boolean;
   onToggle: () => void;
   label: React.ReactNode;
   icon: React.ReactNode;
   rowBg: string;
-}> = ({ enabled, onToggle, label, icon, rowBg }) => (
-  <div className={`flex items-center justify-between p-3 rounded-lg ${rowBg}`}>
+  disabled?: boolean;
+}> = ({ enabled, onToggle, label, icon, rowBg, disabled }) => (
+  <div className={`flex items-center justify-between p-3 rounded-lg ${rowBg} ${disabled ? "opacity-40" : ""}`}>
     <div className="flex items-center gap-2">{icon}<span className="text-sm">{label}</span></div>
     <button
-      onClick={onToggle}
-      className={`relative w-10 h-5 rounded-full transition-colors ${enabled ? "bg-purple-500" : "bg-gray-300 dark:bg-gray-600"}`}
+      onClick={disabled ? undefined : onToggle}
+      disabled={disabled}
+      className={`relative w-10 h-5 rounded-full transition-colors ${enabled ? "bg-purple-500" : "bg-gray-300 dark:bg-gray-600"} ${disabled ? "cursor-not-allowed" : ""}`}
     >
       <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-5" : ""}`} />
     </button>
@@ -31,6 +31,7 @@ const Toggle: React.FC<{
 const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const [mounted, setMounted] = useState(false);
   const [state, setState] = useState<RecordingState>("idle");
+  const [isPaused, setIsPaused] = useState(false);
   const [includeMic, setIncludeMic] = useState(false);
   const [includeCamera, setIncludeCamera] = useState(false);
   const [duration, setDuration] = useState(0);
@@ -46,6 +47,14 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const cameraStreamRef = useRef<MediaStream | null>(null);
   const cameraVideoRef = useRef<HTMLVideoElement | null>(null);
   const audioCtxRef = useRef<AudioContext | null>(null);
+  // Destination node kept alive for the recording duration so new mic sources can connect mid-recording
+  const audioDestRef = useRef<MediaStreamAudioDestinationNode | null>(null);
+  // Stored gain node so we can mute/unmute mic while recording without rebuilding the graph
+  const micGainRef = useRef<GainNode | null>(null);
+  // Silent keepalive source — ensures the AudioContext destination always emits audio
+  // samples even when no real sources are connected. Without this, MediaRecorder stalls
+  // buffering video frames while waiting for audio data, causing frozen video playback.
+  const keepaliveRef = useRef<ConstantSourceNode | null>(null);
   const chunksRef = useRef<Blob[]>([]);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   // Draggable camera overlay position — null until mounted so we can read window size
@@ -54,11 +63,9 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
 
   useEffect(() => {
     setMounted(true);
-    // Set initial camera position to bottom-left after we know the viewport size
     setCamPos({ x: 24, y: window.innerHeight - 250 });
   }, []);
 
-  // Set srcObject when camera overlay mounts after setCameraActive(true)
   useEffect(() => {
     if (cameraActive && cameraVideoRef.current && cameraStreamRef.current) {
       cameraVideoRef.current.srcObject = cameraStreamRef.current;
@@ -73,6 +80,35 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   // Call getUserMedia directly in the toggle handlers — must stay inside the
   // user-gesture call stack so Chrome grants permissions without a second prompt.
   const handleMicToggle = () => {
+    if (state === "recording") {
+      if (includeMic) {
+        // Mute via gain — keeps the node connected so unmute is instant
+        if (micGainRef.current) micGainRef.current.gain.value = 0;
+        setIncludeMic(false);
+      } else if (micGainRef.current) {
+        // Was muted but gain node exists — just unmute
+        micGainRef.current.gain.value = 2.5;
+        setIncludeMic(true);
+      } else {
+        // Mic was never enabled — request and connect to the live AudioContext destination
+        navigator.mediaDevices.getUserMedia({ audio: true, video: false })
+          .then((stream) => {
+            micStreamRef.current = stream;
+            const audioCtx = audioCtxRef.current;
+            const dest = audioDestRef.current;
+            if (!audioCtx || !dest) return;
+            const micSource = audioCtx.createMediaStreamSource(new MediaStream(stream.getAudioTracks()));
+            const gain = audioCtx.createGain();
+            gain.gain.value = 2.5;
+            micSource.connect(gain);
+            gain.connect(dest);
+            micGainRef.current = gain;
+            setIncludeMic(true);
+          })
+          .catch(() => {});
+      }
+      return;
+    }
     if (includeMic) {
       stopMic();
       setIncludeMic(false);
@@ -88,18 +124,28 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
 
   const handleCameraToggle = () => {
     if (includeCamera) {
-      cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
-      cameraStreamRef.current = null;
+      // Hide the overlay. During recording keep the stream alive so re-enabling is instant.
+      if (state !== "recording") {
+        cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+        cameraStreamRef.current = null;
+      }
       setCameraActive(false);
       setIncludeCamera(false);
     } else {
-      navigator.mediaDevices.getUserMedia({ video: true, audio: false })
-        .then((stream) => {
-          cameraStreamRef.current = stream;
-          setIncludeCamera(true);
-          setCameraActive(true);
-        })
-        .catch(() => {});
+      if (cameraStreamRef.current) {
+        // Stream already alive (was hidden mid-recording) — just re-show overlay
+        setCameraActive(true);
+        setIncludeCamera(true);
+      } else {
+        // Request a fresh camera stream (works both before and during recording)
+        navigator.mediaDevices.getUserMedia({ video: true, audio: false })
+          .then((stream) => {
+            cameraStreamRef.current = stream;
+            setIncludeCamera(true);
+            setCameraActive(true);
+          })
+          .catch(() => {});
+      }
     }
   };
 
@@ -115,6 +161,7 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
       displayStreamRef.current?.getTracks().forEach((t) => t.stop());
       micStreamRef.current?.getTracks().forEach((t) => t.stop());
       cameraStreamRef.current?.getTracks().forEach((t) => t.stop());
+      keepaliveRef.current?.stop();
       audioCtxRef.current?.close();
     };
   }, []);
@@ -128,39 +175,50 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
     setState("requesting");
     try {
       const displayStream: MediaStream = await (navigator.mediaDevices as any).getDisplayMedia({
-        video: true,
+        video: { frameRate: { ideal: 30 } },
         audio: true,
+        // Pre-select the current tab in Chrome's picker (Chrome 94+).
+        // selfBrowserSurface ensures the current tab is listed and highlighted (Chrome 107+).
         preferCurrentTab: true,
+        selfBrowserSurface: "include",
       });
       displayStreamRef.current = displayStream;
 
-      // Collect audio sources — reuse mic stream that's already live for the analyser
       const displayAudioTracks = displayStream.getAudioTracks();
       const micAudioTracks: MediaStreamTrack[] = includeMic
         ? (micStreamRef.current?.getAudioTracks() ?? [])
         : [];
 
-      // Mix all audio via AudioContext so every source is reliably captured
-      let finalAudioTracks: MediaStreamTrack[] = [];
-      if (displayAudioTracks.length > 0 || micAudioTracks.length > 0) {
-        const audioCtx = new AudioContext();
-        await audioCtx.resume();
-        audioCtxRef.current = audioCtx;
-        const dest = audioCtx.createMediaStreamDestination();
-        if (displayAudioTracks.length > 0)
-          audioCtx.createMediaStreamSource(new MediaStream(displayAudioTracks)).connect(dest);
-        if (micAudioTracks.length > 0) {
-          const micSource = audioCtx.createMediaStreamSource(new MediaStream(micAudioTracks));
-          // Boost mic gain — browser captures mic at lower level than OS shows
-          const gain = audioCtx.createGain();
-          gain.gain.value = 2.5;
-          micSource.connect(gain);
-          gain.connect(dest);
-        }
-        finalAudioTracks = dest.stream.getAudioTracks();
-      }
+      // Always create an AudioContext so new mic sources can be connected mid-recording
+      const audioCtx = new AudioContext();
+      await audioCtx.resume();
+      audioCtxRef.current = audioCtx;
+      const dest = audioCtx.createMediaStreamDestination();
+      audioDestRef.current = dest;
 
-      // Build recording stream: display video + AudioContext-mixed audio
+      // Silent keepalive: ConstantSourceNode at 0 gain ensures the destination always
+      // produces audio samples. Without a connected source the dest track emits nothing,
+      // causing MediaRecorder to stall waiting for audio — which freezes the video.
+      const keepalive = audioCtx.createConstantSource();
+      const keepaliveGain = audioCtx.createGain();
+      keepaliveGain.gain.value = 0;
+      keepalive.connect(keepaliveGain);
+      keepaliveGain.connect(dest);
+      keepalive.start();
+      keepaliveRef.current = keepalive;
+
+      if (displayAudioTracks.length > 0)
+        audioCtx.createMediaStreamSource(new MediaStream(displayAudioTracks)).connect(dest);
+      if (micAudioTracks.length > 0) {
+        const micSource = audioCtx.createMediaStreamSource(new MediaStream(micAudioTracks));
+        const gain = audioCtx.createGain();
+        gain.gain.value = 2.5;
+        micSource.connect(gain);
+        gain.connect(dest);
+        micGainRef.current = gain;
+      }
+      const finalAudioTracks = dest.stream.getAudioTracks();
+
       const videoTrack = displayStream.getVideoTracks()[0];
       const recordingStream = new MediaStream([
         ...(videoTrack ? [videoTrack] : []),
@@ -168,8 +226,20 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
       ]);
 
       chunksRef.current = [];
-      // No mimeType — browser default guarantees video is encoded correctly
-      const recorder = new MediaRecorder(recordingStream);
+      // WebM is preferred for screen recording — it handles long recordings and audio/video
+      // sync reliably. Fragmented MP4 (what MediaRecorder produces) has known sync issues
+      // on long recordings and can produce frozen video if muxing falls behind.
+      const MIME_PRIORITY = [
+        "video/webm;codecs=vp9,opus",
+        "video/webm;codecs=vp8,opus",
+        "video/webm",
+        "video/mp4;codecs=avc1,mp4a.40.2",
+        "video/mp4;codecs=avc1",
+      ];
+      const chosenMime = MIME_PRIORITY.find((t) => MediaRecorder.isTypeSupported(t)) ?? "";
+      const recorder = chosenMime
+        ? new MediaRecorder(recordingStream, { mimeType: chosenMime })
+        : new MediaRecorder(recordingStream);
       const actualMime = recorder.mimeType || "video/webm";
       setUsedMime(actualMime);
 
@@ -181,22 +251,27 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
         const blob = new Blob(chunksRef.current, { type: actualMime });
         setRecordedBlob(blob);
         setState("stopped");
+        setIsPaused(false);
         if (timerRef.current) clearInterval(timerRef.current);
         displayStreamRef.current?.getTracks().forEach((t) => t.stop());
         audioCtxRef.current?.close();
         displayStreamRef.current = null;
         audioCtxRef.current = null;
-        // Mic stream stays alive (analyser keeps running) so user can re-record
+        audioDestRef.current = null;
+        micGainRef.current = null;
+        keepaliveRef.current?.stop();
+        keepaliveRef.current = null;
       };
 
       videoTrack?.addEventListener("ended", () => {
-        if (mediaRecorderRef.current?.state === "recording")
-          mediaRecorderRef.current.stop();
+        if (mediaRecorderRef.current?.state !== "inactive")
+          mediaRecorderRef.current?.stop();
       });
 
       mediaRecorderRef.current = recorder;
       recorder.start(500);
       setState("recording");
+      setIsPaused(false);
       setDuration(0);
       timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
     } catch {
@@ -210,10 +285,29 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
     }
   };
 
+  const pauseResumeRecording = async () => {
+    const recorder = mediaRecorderRef.current;
+    if (!recorder) return;
+    if (recorder.state === "recording") {
+      recorder.pause();
+      // Suspend AudioContext so no audio is processed or buffered during pause.
+      // Without this, the AudioContext clock keeps ticking and causes timeline
+      // drift that degrades audio quality on resume.
+      await audioCtxRef.current?.suspend();
+      if (timerRef.current) clearInterval(timerRef.current);
+      setIsPaused(true);
+    } else if (recorder.state === "paused") {
+      // Resume AudioContext first so audio is flowing before the recorder
+      // starts collecting data again — prevents a silent gap at the seam.
+      await audioCtxRef.current?.resume();
+      recorder.resume();
+      timerRef.current = setInterval(() => setDuration((d) => d + 1), 1000);
+      setIsPaused(false);
+    }
+  };
+
   // Draggable camera overlay handlers
   const onDragStart = (e: React.MouseEvent) => {
-    // Read the element's actual rendered position — avoids jump when camPos
-    // hasn't been synced yet with the CSS-computed position.
     const rect = (e.currentTarget as HTMLElement).getBoundingClientRect();
     const initX = rect.left;
     const initY = rect.top;
@@ -236,8 +330,8 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   };
 
   const stopRecording = () => {
-    if (mediaRecorderRef.current?.state === "recording")
-      mediaRecorderRef.current.stop();
+    const recorder = mediaRecorderRef.current;
+    if (recorder && recorder.state !== "inactive") recorder.stop();
     if (timerRef.current) clearInterval(timerRef.current);
   };
 
@@ -255,12 +349,12 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const resetRecorder = () => {
     setRecordedBlob(null);
     setDuration(0);
+    setIsPaused(false);
     setState("idle");
   };
 
   const panelBg = isDark ? "bg-gray-800 border-gray-700 text-white" : "bg-white border-gray-200 text-gray-900";
   const rowBg = isDark ? "bg-gray-700" : "bg-gray-50";
-
 
   return (
     <>
@@ -282,8 +376,11 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
           <div className="absolute top-1 right-1 bg-black/50 rounded-full p-0.5 cursor-move">
             <GripVertical className="w-3 h-3 text-white" />
           </div>
-          {state === "recording" && (
+          {state === "recording" && !isPaused && (
             <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-red-500 animate-pulse" />
+          )}
+          {state === "recording" && isPaused && (
+            <div className="absolute top-1 left-1 w-2 h-2 rounded-full bg-yellow-400" />
           )}
         </div>
       )}
@@ -348,26 +445,57 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
 
             {/* Recording */}
             {state === "recording" && (
-              <div className="space-y-3">
+              <div className="space-y-2">
+                {/* Timer */}
                 <div className="flex items-center justify-center gap-3 py-2">
-                  <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
-                  <span className="font-mono font-bold text-red-500 text-lg">{formatTime(duration)}</span>
-                  <span className={`text-xs font-semibold ${isDark ? "text-gray-400" : "text-gray-500"}`}>REC</span>
+                  {isPaused
+                    ? <div className="w-3 h-3 rounded-sm bg-yellow-400" />
+                    : <div className="w-3 h-3 rounded-full bg-red-500 animate-pulse" />
+                  }
+                  <span className={`font-mono font-bold text-lg ${isPaused ? (isDark ? "text-yellow-400" : "text-yellow-500") : "text-red-500"}`}>
+                    {formatTime(duration)}
+                  </span>
+                  <span className={`text-xs font-semibold ${isPaused ? (isDark ? "text-yellow-400" : "text-yellow-600") : (isDark ? "text-gray-400" : "text-gray-500")}`}>
+                    {isPaused ? "PAUSED" : "REC"}
+                  </span>
                 </div>
-                {includeMic && (
-                  <div className="flex items-center justify-center gap-1">
-                    <Mic className="w-3 h-3 text-green-500" />
-                    <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Mic active</span>
-                  </div>
-                )}
-                {cameraActive && (
-                  <div className="flex items-center justify-center gap-1">
-                    <Camera className="w-3 h-3 text-blue-500" />
-                    <span className={`text-xs ${isDark ? "text-gray-400" : "text-gray-500"}`}>Camera active</span>
-                  </div>
-                )}
+
+                {/* Mic toggle during recording */}
+                <Toggle
+                  rowBg={rowBg}
+                  enabled={includeMic}
+                  onToggle={handleMicToggle}
+                  label="Microphone"
+                  icon={includeMic ? <Mic className="w-4 h-4 text-green-500" /> : <MicOff className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />}
+                />
+
+                {/* Camera toggle during recording */}
+                <Toggle
+                  rowBg={rowBg}
+                  enabled={includeCamera}
+                  onToggle={handleCameraToggle}
+                  label="Camera overlay"
+                  icon={includeCamera ? <Camera className="w-4 h-4 text-blue-500" /> : <CameraOff className={`w-4 h-4 ${isDark ? "text-gray-400" : "text-gray-500"}`} />}
+                />
+
+                {/* Pause / Resume */}
                 <button
-                  onClick={() => { if (mediaRecorderRef.current?.state === "recording") mediaRecorderRef.current.stop(); if (timerRef.current) clearInterval(timerRef.current); }}
+                  onClick={pauseResumeRecording}
+                  className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm transition-colors ${
+                    isPaused
+                      ? "bg-green-500 hover:bg-green-600 text-white"
+                      : isDark
+                      ? "bg-yellow-600 hover:bg-yellow-500 text-white"
+                      : "bg-yellow-400 hover:bg-yellow-500 text-white"
+                  }`}
+                >
+                  {isPaused ? <Play className="w-4 h-4 fill-white" /> : <Pause className="w-4 h-4 fill-white" />}
+                  {isPaused ? "Resume" : "Pause"}
+                </button>
+
+                {/* Stop */}
+                <button
+                  onClick={stopRecording}
                   className={`w-full flex items-center justify-center gap-2 py-2 px-4 rounded-lg font-semibold text-sm transition-colors text-white ${isDark ? "bg-gray-600 hover:bg-gray-500" : "bg-gray-700 hover:bg-gray-800"}`}
                 >
                   <Square className="w-4 h-4 fill-white" />
@@ -401,15 +529,20 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
         {/* Trigger */}
         <button
           onClick={() => setIsExpanded((v) => !v)}
-          title={state === "recording" ? `Recording — ${formatTime(duration)}` : "Screen Recorder"}
+          title={state === "recording" ? `${isPaused ? "Paused" : "Recording"} — ${formatTime(duration)}` : "Screen Recorder"}
           className={`flex items-center gap-2 px-4 py-2.5 rounded-full shadow-xl border-2 font-semibold text-sm transition-all duration-300 hover:scale-105 ${
             state === "recording"
-              ? "bg-red-500 text-white border-red-400 animate-pulse"
+              ? isPaused
+                ? "bg-yellow-400 text-white border-yellow-300"
+                : "bg-red-500 text-white border-red-400 animate-pulse"
               : "bg-purple-600 hover:bg-purple-700 text-white border-purple-400"
           }`}
         >
           <Video className="w-4 h-4" />
-          {state === "recording" ? <span className="font-mono font-bold">{formatTime(duration)}</span> : <span>Record</span>}
+          {state === "recording"
+            ? <span className="font-mono font-bold">{formatTime(duration)}</span>
+            : <span>Record</span>
+          }
         </button>
       </div>
     </>

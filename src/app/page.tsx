@@ -13,11 +13,8 @@ import WinnerAnnouncement from "@/containers/WinnerAnnouncement";
 import BumperPrizeModal from "@/containers/BumperPrize";
 import CategoryFilter from "@/containers/CategoryFilter";
 import MultipleWinnersModal from "@/containers/MultipleWinners";
-import ScreenRecorder from "@/components/common/ScreenRecorder";
-
 // Utils
 import { parseParticipants } from "@/utils/functions/parseParticipants";
-import { useDarkMode } from "@/utils/hooks/useDarkMode";
 import { useSpinWheel } from "@/utils/hooks/useSpinningWheel";
 import { Participant } from "@/utils/types/common";
 import { applyTheme } from "@/config/config";
@@ -37,8 +34,7 @@ const BallotingApp: React.FC = () => {
   const [bumperPrizeWinner, setBumperPrizeWinner] = useState<any>(null);
   const [multipleWinners, setMultipleWinners] = useState<Participant[]>([]);
   const [isFullReset, setIsFullReset] = useState(false);
-  const { isDark, toggleDarkMode } = useDarkMode();
-  const { appConfig } = useConfig();
+  const { appConfig, isDark, toggleDarkMode } = useConfig();
   const {
     isSpinning,
     isWheelStopped,
@@ -797,8 +793,6 @@ const BallotingApp: React.FC = () => {
           giftImage={giftImage}
         />
       )}
-
-      <ScreenRecorder isDark={isDark} />
 
       <Footer isDark={isDark} />
     </div>

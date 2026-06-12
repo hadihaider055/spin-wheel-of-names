@@ -8,6 +8,7 @@ import "./globals.css";
 
 // Contexts
 import { ConfigProvider } from "@/contexts/ConfigContext";
+import ScreenRecorderMount from "@/components/common/ScreenRecorderMount";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -170,7 +171,10 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ConfigProvider>{children}</ConfigProvider>
+        <ConfigProvider>
+          {children}
+          <ScreenRecorderMount />
+        </ConfigProvider>
       </body>
     </html>
   );
