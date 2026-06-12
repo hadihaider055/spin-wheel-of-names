@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 // Icons
 import { Trophy, Sparkles, Gift, Volume2, VolumeX } from "lucide-react";
@@ -14,69 +14,75 @@ const WinnerAnnouncement: React.FC<{
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
   const { appConfig } = useConfig();
-  const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
+  const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(!appConfig.winner.celebrationSound);
 
+  // Initialize and start audio on mount
   useEffect(() => {
-    if (appConfig.audio.winnerSound && appConfig.winner.celebrationSound) {
+    if (appConfig.audio.winnerSound && appConfig.winner.celebrationSound && !isMuted) {
       const timer = setTimeout(() => {
-        if (typeof appConfig.audio.winnerSound === "string") {
-          const winnerAudio = new Audio(appConfig.audio.winnerSound);
-          winnerAudio.volume = appConfig.audio.volume;
-          winnerAudio.loop = true;
-          setAudio(winnerAudio);
-        }
+        const winnerAudio = new Audio(appConfig.audio.winnerSound!);
+        winnerAudio.volume = appConfig.audio.volume;
+        winnerAudio.loop = true;
+        audioRef.current = winnerAudio;
+        winnerAudio.play().catch(() => {});
       }, 100);
 
       return () => {
         clearTimeout(timer);
-        if (audio) {
-          audio.pause();
-          audio.currentTime = 0;
+        if (audioRef.current) {
+          audioRef.current.pause();
+          audioRef.current.currentTime = 0;
+          audioRef.current = null;
         }
       };
     }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Respond to mute toggle
   useEffect(() => {
-    if (audio && appConfig.winner.celebrationSound) {
-      if (isMuted) {
-        audio.pause();
-      } else {
-        audio.play().catch(() => {});
-      }
+    if (!audioRef.current) return;
+    if (isMuted) {
+      audioRef.current.pause();
+    } else {
+      audioRef.current.play().catch(() => {});
     }
-  }, [audio, isMuted]);
+  }, [isMuted]);
 
-  const toggleMute = () => {
-    setIsMuted(!isMuted);
-  };
-
+  // Auto-close after displayDuration
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
       }
       onClose();
     }, appConfig.winner.displayDuration);
 
     return () => {
       clearTimeout(timer);
-      if (audio) {
-        audio.pause();
-        audio.currentTime = 0;
+      if (audioRef.current) {
+        audioRef.current.pause();
+        audioRef.current.currentTime = 0;
+        audioRef.current = null;
       }
     };
-  }, [onClose, audio]);
+  // onClose is stable enough; displayDuration is read once on mount intentionally
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [onClose]);
 
   const handleManualClose = () => {
-    if (audio) {
-      audio.pause();
-      audio.currentTime = 0;
+    if (audioRef.current) {
+      audioRef.current.pause();
+      audioRef.current.currentTime = 0;
+      audioRef.current = null;
     }
     onClose();
   };
+
+  const toggleMute = () => setIsMuted((v) => !v);
 
   return (
     <div
@@ -122,7 +128,7 @@ const WinnerAnnouncement: React.FC<{
                 isDark ? "text-white" : "text-gray-800"
               } mb-4`}
             >
-              🎉 WINNER! 🎉
+              WINNER!
             </h2>
 
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-2xl mb-4">

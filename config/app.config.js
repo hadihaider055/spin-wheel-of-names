@@ -6,17 +6,17 @@ export const appConfig = {
 
   // Visual customization
   theme: {
-    primaryColor: "#3b82f6",
-    secondaryColor: "#10b981",
-    backgroundColor: "#ffffff",
+    primaryColor: "#7c3aed",
+    secondaryColor: "#a855f7",
+    backgroundColor: "#faf5ff",
     textColor: "#1f2937",
 
     // Dark mode colors
     darkMode: {
-      backgroundColor: "#1f2937",
+      backgroundColor: "#0f0a1e",
       textColor: "#f9fafb",
-      primaryColor: "#60a5fa",
-      secondaryColor: "#34d399",
+      primaryColor: "#a855f7",
+      secondaryColor: "#818cf8",
     },
   },
 
@@ -35,6 +35,9 @@ export const appConfig = {
     easing: "cubic-bezier(0.23, 1, 0.32, 1)",
     minSpins: 5,
     maxSpins: 10,
+
+    // Color preset for wheel segments (default, rainbow, ocean, sunset, pastel)
+    colorPreset: "default",
   },
 
   // Winner announcement
@@ -54,7 +57,8 @@ export const appConfig = {
 
   // Branding (optional - leave empty to hide)
   branding: {
-    logo: null, // Path to logo image (optional) --- null to disable
+    logo: null, // Path to logo image (optional) --- null to disable (shown on left side)
+    logo2: null, // Path to second logo image (optional) --- null to disable (shown on right side)
     companyName: "",
     website: "",
     showPoweredBy: true,

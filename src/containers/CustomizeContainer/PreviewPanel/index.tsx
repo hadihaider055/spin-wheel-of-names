@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { Sparkles, Copy, ArrowLeft } from "lucide-react";
 import { CustomConfig } from "../index";
+import { getWheelColors } from "@/config/config";
 
 interface PreviewPanelProps {
   isDark: boolean;
@@ -28,39 +29,38 @@ const PreviewPanel: React.FC<PreviewPanelProps> = ({
 
         {/* Mini Wheel Preview */}
         <div className="text-center">
-          <div
-            className="w-40 h-40 rounded-full mx-auto mb-6 border-4 border-white shadow-2xl relative overflow-hidden"
-            style={{
-              background: `linear-gradient(135deg, ${previewConfig.primaryColor}, ${previewConfig.secondaryColor})`,
-            }}
-          >
-            <div className="absolute inset-2 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center">
-              <div className="text-center">
-                <div className="text-white font-bold text-sm mb-1">{previewConfig.title}</div>
-                <div className="text-white/80 text-xs">{previewConfig.description}</div>
-              </div>
-            </div>
-            {/* Wheel segments preview */}
-            <div className="absolute inset-0">
-              {[0, 1, 2, 3].map((i) => (
+          {(() => {
+            const colors = getWheelColors(previewConfig.colorPreset || "default");
+            const conicStops = colors
+              .map((c, i) => `${c} ${(i / colors.length) * 100}% ${((i + 1) / colors.length) * 100}%`)
+              .join(", ");
+            return (
+              <div className="relative w-40 h-40 mx-auto mb-6">
+                {/* Outer ring using theme primary/secondary */}
                 <div
-                  key={i}
-                  className="absolute w-1/2 h-1/2 origin-bottom-right"
+                  className="w-40 h-40 rounded-full border-4 border-white shadow-2xl"
                   style={{
-                    transform: `rotate(${i * 90}deg)`,
+                    background: `conic-gradient(${conicStops})`,
+                  }}
+                />
+                {/* Center hub */}
+                <div
+                  className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-14 h-14 rounded-full border-4 border-white shadow-lg flex items-center justify-center"
+                  style={{
+                    background: `linear-gradient(135deg, ${previewConfig.primaryColor}, ${previewConfig.secondaryColor})`,
                   }}
                 >
-                  <div 
-                    className="w-full h-full opacity-30"
-                    style={{ 
-                      background: i % 2 === 0 ? previewConfig.primaryColor : previewConfig.secondaryColor,
-                      clipPath: 'polygon(0 100%, 100% 100%, 50% 0)'
-                    }}
-                  />
+                  <span className="text-white text-xs font-bold text-center leading-tight px-1 truncate max-w-full">
+                    {previewConfig.title.slice(0, 6)}
+                  </span>
                 </div>
-              ))}
-            </div>
-          </div>
+                {/* Pointer */}
+                <div className="absolute top-0 left-1/2 -translate-x-1/2 -translate-y-1 w-0 h-0"
+                  style={{ borderLeft: "6px solid transparent", borderRight: "6px solid transparent", borderBottom: "12px solid #EF4444" }}
+                />
+              </div>
+            );
+          })()}
 
           {/* Configuration Summary */}
           <div className="space-y-3">

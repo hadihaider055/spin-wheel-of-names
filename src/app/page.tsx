@@ -13,6 +13,7 @@ import WinnerAnnouncement from "@/containers/WinnerAnnouncement";
 import BumperPrizeModal from "@/containers/BumperPrize";
 import CategoryFilter from "@/containers/CategoryFilter";
 import MultipleWinnersModal from "@/containers/MultipleWinners";
+import ScreenRecorder from "@/components/common/ScreenRecorder";
 
 // Utils
 import { parseParticipants } from "@/utils/functions/parseParticipants";
@@ -24,7 +25,6 @@ import { useConfig } from "@/contexts/ConfigContext";
 import { Trash2 } from "lucide-react";
 
 const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
-const WINNERS_STORAGE_KEY = "wheelOfFortuneWinners";
 const GIFT_IMAGE_STORAGE_KEY = "wheelOfFortuneGiftImage";
 const SELECTED_CATEGORIES_STORAGE_KEY = "wheelOfFortuneSelectedCategories";
 
@@ -151,8 +151,28 @@ const BallotingApp: React.FC = () => {
       ) {
         setShowBumperPrize(true);
       }
+
+      // Trigger multiple winners modal when the feature is enabled
+      if (
+        appConfig.features.multipleWinners &&
+        appConfig.multipleWinners.enabled &&
+        appConfig.multipleWinners.maxWinners > 1
+      ) {
+        const pool =
+          selectedCategories.length > 0
+            ? participants.filter((p) => selectedCategories.includes(p.category))
+            : participants;
+        const remaining = pool.filter((p) => p.id !== winner.id);
+        const additionalCount = Math.min(
+          appConfig.multipleWinners.maxWinners - 1,
+          remaining.length
+        );
+        const shuffled = [...remaining].sort(() => Math.random() - 0.5);
+        setMultipleWinners([winner, ...shuffled.slice(0, additionalCount)]);
+      }
     }
-  }, [winner, stopAudio, winners.length, appConfig]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [winner]);
 
   const handleSpin = () => {
     if (!isSpinning && !isWheelStopped && participants.length > 0) {
@@ -262,6 +282,15 @@ const BallotingApp: React.FC = () => {
     clearWinners();
   };
 
+  const handleMultipleWinnersClose = () => {
+    if (multipleWinners.length > 0) {
+      const winnerIds = new Set(multipleWinners.map((w) => w.id));
+      setParticipants((prev) => prev.filter((p) => !winnerIds.has(p.id)));
+    }
+    setMultipleWinners([]);
+    reset();
+  };
+
   const handleFullReset = () => {
     if (
       window.confirm(
@@ -277,7 +306,6 @@ const BallotingApp: React.FC = () => {
       setBumperPrizeWinner(null);
 
       localStorage.removeItem(PARTICIPANTS_STORAGE_KEY);
-      localStorage.removeItem(WINNERS_STORAGE_KEY);
       localStorage.removeItem(GIFT_IMAGE_STORAGE_KEY);
       localStorage.removeItem(SELECTED_CATEGORIES_STORAGE_KEY);
 
@@ -298,11 +326,12 @@ const BallotingApp: React.FC = () => {
 
   return (
     <div
-      className={`min-h-screen transition-colors duration-500 ${
-        isDark
-          ? "bg-gradient-to-br from-gray-900 via-purple-900 to-indigo-900"
-          : "bg-gradient-to-br from-indigo-50 via-purple-50 to-pink-50"
-      }`}
+      className="min-h-screen transition-colors duration-500"
+      style={{
+        background: isDark
+          ? `linear-gradient(135deg, ${appConfig.theme.darkMode.backgroundColor} 0%, ${appConfig.theme.darkMode.primaryColor}55 50%, ${appConfig.theme.darkMode.secondaryColor}44 100%)`
+          : `linear-gradient(135deg, ${appConfig.theme.backgroundColor} 0%, ${appConfig.theme.primaryColor}22 50%, ${appConfig.theme.secondaryColor}22 100%)`,
+      }}
     >
       <DarkModeToggle isDark={isDark} onToggle={toggleDarkMode} />
       <Navbar isDark={isDark} />
@@ -742,14 +771,16 @@ const BallotingApp: React.FC = () => {
         </section>
       </main>
 
-      {winner && !showBumperPrize && (
-        <WinnerAnnouncement
-          winner={winner}
-          onClose={handleWinnerClose}
-          isDark={isDark}
-          giftImage={giftImage}
-        />
-      )}
+      {winner &&
+        !showBumperPrize &&
+        !(appConfig.features.multipleWinners && appConfig.multipleWinners.enabled) && (
+          <WinnerAnnouncement
+            winner={winner}
+            onClose={handleWinnerClose}
+            isDark={isDark}
+            giftImage={giftImage}
+          />
+        )}
 
       <BumperPrizeModal
         isVisible={showBumperPrize}
@@ -761,11 +792,13 @@ const BallotingApp: React.FC = () => {
       {multipleWinners.length > 0 && (
         <MultipleWinnersModal
           winners={multipleWinners}
-          onClose={() => setMultipleWinners([])}
+          onClose={handleMultipleWinnersClose}
           isDark={isDark}
           giftImage={giftImage}
         />
       )}
+
+      <ScreenRecorder isDark={isDark} />
 
       <Footer isDark={isDark} />
     </div>

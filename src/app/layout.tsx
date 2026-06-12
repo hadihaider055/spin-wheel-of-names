@@ -83,8 +83,7 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    site: "@your-twitter-handle",
-    creator: "@hadi-haider",
+    creator: "@hadihaider055",
     title:
       "Free Spin Wheel Generator - Random Name Picker & Decision Maker Tool 2025",
     description:
@@ -104,10 +103,6 @@ export const metadata: Metadata = {
   },
   alternates: {
     canonical: "https://spin-wheel-of-names.netlify.app/",
-    languages: {
-      "en-US": "/en-US",
-      "es-ES": "/es-ES",
-    },
   },
   category: "Productivity Tools",
   classification: "Free Online Tool",

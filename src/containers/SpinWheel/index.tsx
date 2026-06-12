@@ -62,7 +62,7 @@ const SpinWheel: React.FC<{
     );
   }
 
-  const colors = getWheelColors('default');
+  const colors = getWheelColors(appConfig.wheel.colorPreset || "default");
   const segmentAngle = 360 / participants.length;
   const radius = appConfig.wheel.wheelSize / 2 - 50;
   const centerX = appConfig.wheel.wheelSize / 2;
@@ -196,7 +196,7 @@ const SpinWheel: React.FC<{
                 cx={centerX}
                 cy={centerY}
                 r={radius + 15}
-                fill={`linear-gradient(135deg, ${appConfig.theme.primaryColor}, ${appConfig.theme.secondaryColor})`}
+                fill="url(#outerGradient)"
                 stroke="#fff"
                 strokeWidth={appConfig.wheel.borderWidth}
               />
@@ -243,8 +243,8 @@ const SpinWheel: React.FC<{
                   <stop offset="100%" stopColor="#ffd700" />
                 </linearGradient>
                 <radialGradient id="centerGradient">
-                  <stop offset="0%" stopColor="#4f46e5" />
-                  <stop offset="100%" stopColor="#1e1b4b" />
+                  <stop offset="0%" stopColor={appConfig.theme.primaryColor} />
+                  <stop offset="100%" stopColor={appConfig.theme.secondaryColor} />
                 </radialGradient>
               </defs>
 
