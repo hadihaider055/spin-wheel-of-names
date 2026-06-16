@@ -63,7 +63,7 @@ const BallotingApp: React.FC = () => {
     const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
     const savedGiftImage = localStorage.getItem(GIFT_IMAGE_STORAGE_KEY);
     const savedSelectedCategories = localStorage.getItem(
-      SELECTED_CATEGORIES_STORAGE_KEY
+      SELECTED_CATEGORIES_STORAGE_KEY,
     );
 
     if (savedParticipants) {
@@ -106,7 +106,7 @@ const BallotingApp: React.FC = () => {
             name,
             grade: "",
             category: "Default Category",
-          })
+          }),
         );
         setParticipants(defaultParticipants);
       }
@@ -116,7 +116,7 @@ const BallotingApp: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(
       PARTICIPANTS_STORAGE_KEY,
-      JSON.stringify(participants)
+      JSON.stringify(participants),
     );
   }, [participants]);
 
@@ -131,7 +131,7 @@ const BallotingApp: React.FC = () => {
   useEffect(() => {
     localStorage.setItem(
       SELECTED_CATEGORIES_STORAGE_KEY,
-      JSON.stringify(selectedCategories)
+      JSON.stringify(selectedCategories),
     );
   }, [selectedCategories]);
 
@@ -156,18 +156,20 @@ const BallotingApp: React.FC = () => {
       ) {
         const pool =
           selectedCategories.length > 0
-            ? participants.filter((p) => selectedCategories.includes(p.category))
+            ? participants.filter((p) =>
+                selectedCategories.includes(p.category),
+              )
             : participants;
         const remaining = pool.filter((p) => p.id !== winner.id);
         const additionalCount = Math.min(
           appConfig.multipleWinners.maxWinners - 1,
-          remaining.length
+          remaining.length,
         );
         const shuffled = [...remaining].sort(() => Math.random() - 0.5);
         setMultipleWinners([winner, ...shuffled.slice(0, additionalCount)]);
       }
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [winner]);
 
   const handleSpin = () => {
@@ -198,7 +200,7 @@ const BallotingApp: React.FC = () => {
   const handleWinnerClose = () => {
     if (winner) {
       setParticipants((prevParticipants) =>
-        prevParticipants.filter((p) => p.id !== winner.id)
+        prevParticipants.filter((p) => p.id !== winner.id),
       );
     }
     reset();
@@ -206,30 +208,30 @@ const BallotingApp: React.FC = () => {
 
   const handleDeleteParticipant = (participantId: string) => {
     const participantToDelete = participants.find(
-      (p) => p.id === participantId
+      (p) => p.id === participantId,
     );
     if (
       participantToDelete &&
       window.confirm(`Remove "${participantToDelete.name}" from the list?`)
     ) {
       setParticipants((prevParticipants) =>
-        prevParticipants.filter((p) => p.id !== participantId)
+        prevParticipants.filter((p) => p.id !== participantId),
       );
     }
   };
 
   const handleDeleteCategory = (category: string) => {
     const participantsInCategory = participants.filter(
-      (p) => p.category === category
+      (p) => p.category === category,
     );
     if (
       participantsInCategory.length > 0 &&
       window.confirm(
-        `Remove all ${participantsInCategory.length} participants from "${category}"?`
+        `Remove all ${participantsInCategory.length} participants from "${category}"?`,
       )
     ) {
       setParticipants((prevParticipants) =>
-        prevParticipants.filter((p) => p.category !== category)
+        prevParticipants.filter((p) => p.category !== category),
       );
     }
   };
@@ -238,7 +240,7 @@ const BallotingApp: React.FC = () => {
     if (
       participants.length > 0 &&
       window.confirm(
-        `Remove all ${participants.length} participants from the list?`
+        `Remove all ${participants.length} participants from the list?`,
       )
     ) {
       setParticipants([]);
@@ -290,7 +292,7 @@ const BallotingApp: React.FC = () => {
   const handleFullReset = () => {
     if (
       window.confirm(
-        "Are you sure you want to reset everything? This will clear all participants and winners."
+        "Are you sure you want to reset everything? This will clear all participants and winners.",
       )
     ) {
       setIsFullReset(true);
@@ -441,7 +443,7 @@ const BallotingApp: React.FC = () => {
                             {category} (
                             {
                               participants.filter(
-                                (p) => p.category === category
+                                (p) => p.category === category,
                               ).length
                             }
                             )
@@ -461,7 +463,7 @@ const BallotingApp: React.FC = () => {
                             </button>
                           )}
                         </div>
-                        <div className="space-y-2">
+                        <div className="space-y-2 max-h-[400px] overflow-y-auto">
                           {participants
                             .filter((p) => p.category === category)
                             .map((participant) => (
@@ -512,7 +514,7 @@ const BallotingApp: React.FC = () => {
                             ))}
                         </div>
                       </div>
-                    )
+                    ),
                   )}
                 </div>
               </div>
@@ -557,8 +559,8 @@ const BallotingApp: React.FC = () => {
                                 ? "bg-yellow-900/30 border border-yellow-700"
                                 : "bg-yellow-100 border border-yellow-300"
                               : isDark
-                              ? "bg-gray-600"
-                              : "bg-white"
+                                ? "bg-gray-600"
+                                : "bg-white"
                           }`}
                         >
                           <div className="flex justify-between items-center group">
@@ -769,7 +771,10 @@ const BallotingApp: React.FC = () => {
 
       {winner &&
         !showBumperPrize &&
-        !(appConfig.features.multipleWinners && appConfig.multipleWinners.enabled) && (
+        !(
+          appConfig.features.multipleWinners &&
+          appConfig.multipleWinners.enabled
+        ) && (
           <WinnerAnnouncement
             winner={winner}
             onClose={handleWinnerClose}
