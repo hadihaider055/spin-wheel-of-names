@@ -19,6 +19,11 @@ export const useSpinWheel = () => {
   const spinAudioRef = useRef<HTMLAudioElement | null>(null);
   // Ref keeps the current rotation so setTimeout closures see the latest value
   const rotationRef = useRef(0);
+  // Participants for the current/last spin (needed by stopSpin)
+  const currentParticipantsRef = useRef<Participant[]>([]);
+  // Timeouts so manual stop can cancel pending finalisation
+  const spinTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const finalizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     const savedWinners = localStorage.getItem(WINNERS_STORAGE_KEY);
@@ -42,6 +47,8 @@ export const useSpinWheel = () => {
         spinAudioRef.current.pause();
         spinAudioRef.current = null;
       }
+      if (spinTimeoutRef.current) clearTimeout(spinTimeoutRef.current);
+      if (finalizeTimeoutRef.current) clearTimeout(finalizeTimeoutRef.current);
     };
   }, []);
 
@@ -53,9 +60,36 @@ export const useSpinWheel = () => {
     }
   };
 
+  const finalizeSpin = (finalRotation: number) => {
+    const participants = currentParticipantsRef.current;
+    if (participants.length === 0) {
+      setIsSpinning(false);
+      return;
+    }
+
+    rotationRef.current = finalRotation;
+    setRotation(finalRotation);
+    setIsSpinning(false);
+    setIsWheelStopped(true);
+
+    const segmentAngle = 360 / participants.length;
+    const normalizedRotation =
+      (((360 - (finalRotation % 360)) % 360) + 360) % 360;
+    const winnerIndex = Math.floor(normalizedRotation / segmentAngle);
+    setHoveredSegment(winnerIndex);
+
+    finalizeTimeoutRef.current = setTimeout(() => {
+      const newWinner = participants[winnerIndex] || participants[0];
+      setWinner(newWinner);
+      setWinners((prevWinners) => [newWinner, ...prevWinners].slice(0, 10));
+      setIsWheelStopped(false);
+    }, 1000);
+  };
+
   const spin = (participants: Participant[]) => {
     if (isSpinning || participants.length === 0) return;
 
+    currentParticipantsRef.current = participants;
     setIsSpinning(true);
     setIsWheelStopped(false);
     setWinner(null);
@@ -75,36 +109,35 @@ export const useSpinWheel = () => {
 
     const minRotation = appConfig.wheel.minSpins * 360;
     const maxRotation = appConfig.wheel.maxSpins * 360;
-    const randomRotation = Math.random() * (maxRotation - minRotation) + minRotation;
+    const randomRotation =
+      Math.random() * (maxRotation - minRotation) + minRotation;
     const finalRotation = rotationRef.current + randomRotation;
 
     rotationRef.current = finalRotation;
     setRotation(finalRotation);
 
     const spinDuration = appConfig.wheel.spinDuration;
-    const participantCount = participants.length;
 
-    setTimeout(() => {
+    spinTimeoutRef.current = setTimeout(() => {
       stopAudio();
-      setIsSpinning(false);
-      setIsWheelStopped(true);
-
-      const segmentAngle = 360 / participantCount;
-      const normalizedRotation = (360 - (finalRotation % 360)) % 360;
-      const winnerIndex = Math.floor(normalizedRotation / segmentAngle);
-      setHoveredSegment(winnerIndex);
-
-      setTimeout(() => {
-        const newWinner = participants[winnerIndex] || participants[0];
-        setWinner(newWinner);
-        setWinners((prevWinners) => [newWinner, ...prevWinners].slice(0, 10));
-        setIsWheelStopped(false);
-      }, 1000);
+      finalizeSpin(finalRotation);
     }, spinDuration);
   };
 
+  const stopSpin = (currentVisualRotation: number) => {
+    if (!isSpinning) return;
+    if (spinTimeoutRef.current) {
+      clearTimeout(spinTimeoutRef.current);
+      spinTimeoutRef.current = null;
+    }
+    stopAudio();
+    finalizeSpin(currentVisualRotation);
+  };
+
   const removeWinner = (_winnerId: string, winnerIndex: number) => {
-    setWinners((prevWinners) => prevWinners.filter((_, index) => index !== winnerIndex));
+    setWinners((prevWinners) =>
+      prevWinners.filter((_, index) => index !== winnerIndex),
+    );
   };
 
   const clearWinners = () => {
@@ -114,6 +147,14 @@ export const useSpinWheel = () => {
 
   const reset = () => {
     stopAudio();
+    if (spinTimeoutRef.current) {
+      clearTimeout(spinTimeoutRef.current);
+      spinTimeoutRef.current = null;
+    }
+    if (finalizeTimeoutRef.current) {
+      clearTimeout(finalizeTimeoutRef.current);
+      finalizeTimeoutRef.current = null;
+    }
     setIsSpinning(false);
     setIsWheelStopped(false);
     setWinner(null);
@@ -130,6 +171,7 @@ export const useSpinWheel = () => {
     hoveredSegment,
     winners,
     spin,
+    stopSpin,
     reset,
     removeWinner,
     clearWinners,

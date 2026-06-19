@@ -55,6 +55,10 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
           if (p.theme?.primaryColor === OLD_PRIMARY && p.theme?.secondaryColor === OLD_SECONDARY) {
             delete p.theme;
           }
+          // Migrate: bump small saved wheelSize values up to the new larger default.
+          if (typeof p.wheel?.wheelSize === "number" && p.wheel.wheelSize < 700) {
+            delete p.wheel.wheelSize;
+          }
           // Deep-merge each section so new fields from defaults are always present
           setAppConfig({
             ...config,

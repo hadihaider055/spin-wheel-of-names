@@ -30,7 +30,7 @@ export const appConfig = {
     // Visual appearance
     borderWidth: 4,
     textSize: "16px",
-    wheelSize: 400,
+    wheelSize: 720,
 
     // Animation feel
     easing: "cubic-bezier(0.23, 1, 0.32, 1)",

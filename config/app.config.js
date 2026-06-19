@@ -29,7 +29,7 @@ export const appConfig = {
     // Wheel appearance
     borderWidth: 4,
     textSize: "16px",
-    wheelSize: 400, // pixels
+    wheelSize: 720, // pixels
 
     // Animation settings
     easing: "cubic-bezier(0.23, 1, 0.32, 1)",

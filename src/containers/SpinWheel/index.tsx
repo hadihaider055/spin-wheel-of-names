@@ -1,10 +1,10 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 
 // Icons
-import { Trophy, Users, Play, RotateCcw, Settings } from "lucide-react";
+import { Trophy, Users, Play, RotateCcw, Settings, Square } from "lucide-react";
 import Link from "next/link";
 
 // Utils
@@ -15,6 +15,7 @@ import { useConfig } from "@/contexts/ConfigContext";
 const SpinWheel: React.FC<{
   participants: Participant[];
   onSpin: () => void;
+  onStop: (currentRotation: number) => void;
   isSpinning: boolean;
   isWheelStopped: boolean;
   rotation: number;
@@ -27,6 +28,7 @@ const SpinWheel: React.FC<{
 }> = ({
   participants,
   onSpin,
+  onStop,
   isSpinning,
   isWheelStopped,
   rotation,
@@ -41,12 +43,74 @@ const SpinWheel: React.FC<{
   const [hoveredName, setHoveredName] = useState<string | null>(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [hoverIndex, setHoverIndex] = useState<number | null>(null);
+  const [livePointerIndex, setLivePointerIndex] = useState<number | null>(null);
 
   const truncateName = (name: string, maxChars: number): string => {
     if (name.length <= maxChars) return name;
     if (maxChars <= 3) return name.slice(0, maxChars);
     return name.slice(0, maxChars - 1) + "…";
   };
+
+  // Read wheel's current visual rotation (degrees) from the rendered transform matrix.
+  const readVisualRotation = (): number => {
+    const svg = wheelRef.current;
+    if (!svg) return 0;
+    const t = window.getComputedStyle(svg).transform;
+    if (!t || t === "none") return 0;
+    try {
+      const m = new DOMMatrixReadOnly(t);
+      return (Math.atan2(m.b, m.a) * 180) / Math.PI;
+    } catch {
+      return 0;
+    }
+  };
+
+  const angleToIndex = (angle: number, count: number): number => {
+    const seg = 360 / count;
+    const normalized = (((360 - (angle % 360)) % 360) + 360) % 360;
+    return Math.floor(normalized / seg) % count;
+  };
+
+  // Live-track which segment the arrow is over while spinning.
+  useEffect(() => {
+    if (!isSpinning || participants.length === 0) {
+      if (!isWheelStopped) setLivePointerIndex(null);
+      return;
+    }
+    let frameId = 0;
+    let lastIdx = -1;
+    const tick = () => {
+      const angle = readVisualRotation();
+      const idx = angleToIndex(angle, participants.length);
+      if (idx !== lastIdx) {
+        lastIdx = idx;
+        setLivePointerIndex(idx);
+      }
+      frameId = requestAnimationFrame(tick);
+    };
+    frameId = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(frameId);
+  }, [isSpinning, isWheelStopped, participants.length]);
+
+  // Manual stop: snap wheel to its current visual position, then finalise.
+  const handleStop = () => {
+    const svg = wheelRef.current;
+    if (!svg) return;
+    const currentAngle = readVisualRotation();
+    // Freeze the wheel where it is so React's next render doesn't trigger a back-tween.
+    svg.style.transition = "none";
+    svg.style.transform = `rotate(${currentAngle}deg)`;
+    svg.getBoundingClientRect(); // force reflow
+    onStop(currentAngle);
+  };
+
+  const pointerName = (() => {
+    if (isWheelStopped && hoveredSegment !== null)
+      return participants[hoveredSegment]?.name ?? null;
+    if (isSpinning && livePointerIndex !== null)
+      return participants[livePointerIndex]?.name ?? null;
+    return null;
+  })();
 
   if (participants.length === 0) {
     return (
@@ -85,10 +149,11 @@ const SpinWheel: React.FC<{
   const textRadiusAbs = (hubR + radius) / 2;
   // Each half: (radius - hubR) / 2 minus 4 px padding
   const maxHalfWidth = (radius - hubR) / 2 - 4;
-  // Geist Sans Bold: actual char width ≈ fontSize * 0.44
+  // Geist Sans Bold worst-case char width ≈ fontSize * 0.55 (caps wide glyphs like M/W).
+  const CHAR_W = 0.55;
   const maxChars = Math.max(
     4,
-    Math.floor((maxHalfWidth * 2) / (fontSize * 0.44)),
+    Math.floor((maxHalfWidth * 2) / (fontSize * CHAR_W)),
   );
 
   // Scale font down so its HEIGHT (arc direction) fits within each slice.
@@ -151,9 +216,39 @@ const SpinWheel: React.FC<{
           >
             Spin the Wheel
           </h2>
-          <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
-            May the best participant win!
-          </p>
+          {pointerName ? (
+            <div
+              className={`inline-flex items-center gap-3 mt-2 pl-3 pr-5 py-2 rounded-full font-semibold backdrop-blur-md pointer-shimmer ${
+                isSpinning ? "pointer-glow" : ""
+              } ${
+                isDark
+                  ? "text-white border border-purple-500/40 bg-gradient-to-r from-purple-900/60 via-fuchsia-900/40 to-indigo-900/60"
+                  : "text-indigo-900 border border-purple-300/70 bg-gradient-to-r from-purple-100/90 via-fuchsia-100/80 to-indigo-100/90"
+              }`}
+              aria-live="polite"
+            >
+              <span className="flex flex-col items-start leading-tight px-2">
+                <span
+                  className={`text-[10px] uppercase tracking-[0.18em] font-bold ${
+                    isDark ? "text-purple-300/80" : "text-indigo-600/80"
+                  }`}
+                >
+                  {isWheelStopped ? "Stopping at" : "Now pointing at"}
+                </span>
+                <span
+                  key={pointerName}
+                  className="animate-name-rise text-base sm:text-lg font-bold max-w-[60vw] truncate"
+                  title={pointerName}
+                >
+                  {pointerName}
+                </span>
+              </span>
+            </div>
+          ) : (
+            <p className={`${isDark ? "text-gray-300" : "text-gray-600"}`}>
+              May the best participant win!
+            </p>
+          )}
           {isWheelStopped && (
             <div
               className={`mt-4 p-3 ${
@@ -174,10 +269,11 @@ const SpinWheel: React.FC<{
           )}
         </div>
 
-        <div className="flex flex-col items-center">
+        <div className="flex flex-col items-center w-full">
           <div
-            className="relative mb-8"
+            className="relative mb-8 w-full mx-auto"
             ref={containerRef}
+            style={{ maxWidth: appConfig.wheel.wheelSize }}
             onMouseMove={(e) => {
               if (!isSpinning && containerRef.current) {
                 const rect = containerRef.current.getBoundingClientRect();
@@ -197,7 +293,10 @@ const SpinWheel: React.FC<{
                   left: mousePos.x + 14,
                   top: mousePos.y - 36,
                   transform:
-                    mousePos.x > appConfig.wheel.wheelSize * 0.72
+                    mousePos.x >
+                    (containerRef.current?.offsetWidth ??
+                      appConfig.wheel.wheelSize) *
+                      0.72
                       ? "translateX(-110%)"
                       : "none",
                 }}
@@ -206,11 +305,11 @@ const SpinWheel: React.FC<{
               </div>
             )}
 
-            {/* Pointer arrow — tip 10 px inside the segments */}
+            {/* Pointer arrow — tip ~5% inside the outer ring (scales with SVG) */}
             <div
               className="absolute z-20 pointer-events-none"
               style={{
-                top: `${pointerTipY}px`,
+                top: `${(pointerTipY / appConfig.wheel.wheelSize) * 100}%`,
                 left: "50%",
                 transform: `translateX(-50%) translateY(-100%) ${
                   hoveredSegment !== null ? "scale(1.3)" : "scale(1)"
@@ -240,16 +339,20 @@ const SpinWheel: React.FC<{
             </div>
 
             {/* Wheel SVG */}
-            <div className="relative">
+            <div className="relative w-full">
               <svg
                 ref={wheelRef}
                 width={appConfig.wheel.wheelSize}
                 height={appConfig.wheel.wheelSize}
+                viewBox={`0 0 ${appConfig.wheel.wheelSize} ${appConfig.wheel.wheelSize}`}
                 className={`drop-shadow-2xl ${
                   isSpinning ? "wheel-transition" : "wheel-reset"
                 }`}
                 style={{
                   cursor: "default",
+                  width: "100%",
+                  height: "auto",
+                  display: "block",
                   transform: `rotate(${rotation}deg)`,
                   transition: isSpinning
                     ? `transform ${appConfig.wheel.spinDuration}ms ${appConfig.wheel.easing}`
@@ -343,12 +446,26 @@ const SpinWheel: React.FC<{
 
                   const isWinningSegment = hoveredSegment === index;
                   const isHovered = !isSpinning && hoverIndex === index;
-                  // Winning segment always shows the full name; others are truncated
+                  // Winner shows the full name — shrink the font to fit, only truncate
+                  // as a last resort when even the minimum font would overflow.
+                  const winnerFitFont = Math.min(
+                    16,
+                    Math.floor(
+                      (maxHalfWidth * 2) /
+                        (Math.max(1, participant.name.length) * CHAR_W),
+                    ),
+                  );
+                  const winnerFontSize = Math.max(9, winnerFitFont);
+                  const winnerMaxChars = Math.max(
+                    4,
+                    Math.floor((maxHalfWidth * 2) / (winnerFontSize * CHAR_W)),
+                  );
                   const displayName = isWinningSegment
-                    ? participant.name
+                    ? truncateName(participant.name, winnerMaxChars)
                     : truncateName(participant.name, maxChars);
-                  // Winning segment gets a larger font; otherwise use adaptive size
-                  const segFontSize = isWinningSegment ? 16 : adaptiveFontSize;
+                  const segFontSize = isWinningSegment
+                    ? winnerFontSize
+                    : adaptiveFontSize;
 
                   return (
                     <g
@@ -450,34 +567,37 @@ const SpinWheel: React.FC<{
           </div>
 
           <div className="flex flex-wrap gap-4 justify-center">
-            <button
-              onClick={onSpin}
-              disabled={
-                isSpinning || isWheelStopped || participants.length === 0
-              }
-              className={`flex items-center gap-3 px-12 py-5 rounded-2xl cursor-pointer text-white font-bold text-lg transition-all duration-300 shadow-xl ${
-                isSpinning || isWheelStopped || participants.length === 0
-                  ? "bg-gray-400 cursor-not-allowed"
-                  : "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 transform hover:scale-105 hover:shadow-2xl"
-              }`}
-            >
-              {isSpinning ? (
-                <>
-                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-white"></div>
-                  Spinning...
-                </>
-              ) : isWheelStopped ? (
-                <>
-                  <Trophy className="w-6 h-6 animate-bounce" />
-                  Announcing...
-                </>
-              ) : (
-                <>
-                  <Play className="w-6 h-6" />
-                  SPIN THE WHEEL
-                </>
-              )}
-            </button>
+            {isSpinning ? (
+              <button
+                onClick={handleStop}
+                className="flex items-center gap-3 px-12 py-5 rounded-2xl cursor-pointer text-white font-bold text-lg transition-all duration-300 shadow-xl bg-gradient-to-r from-rose-500 via-red-500 to-orange-500 hover:from-rose-600 hover:via-red-600 hover:to-orange-600 transform hover:scale-105 hover:shadow-2xl animate-pulse"
+              >
+                <Square className="w-6 h-6 fill-white" />
+                STOP
+              </button>
+            ) : (
+              <button
+                onClick={onSpin}
+                disabled={isWheelStopped || participants.length === 0}
+                className={`flex items-center gap-3 px-12 py-5 rounded-2xl cursor-pointer text-white font-bold text-lg transition-all duration-300 shadow-xl ${
+                  isWheelStopped || participants.length === 0
+                    ? "bg-gray-400 cursor-not-allowed"
+                    : "bg-gradient-to-r from-green-500 via-emerald-500 to-teal-500 hover:from-green-600 hover:via-emerald-600 hover:to-teal-600 transform hover:scale-105 hover:shadow-2xl"
+                }`}
+              >
+                {isWheelStopped ? (
+                  <>
+                    <Trophy className="w-6 h-6 animate-bounce" />
+                    Announcing...
+                  </>
+                ) : (
+                  <>
+                    <Play className="w-6 h-6" />
+                    SPIN THE WHEEL
+                  </>
+                )}
+              </button>
+            )}
 
             <button
               onClick={onReset}

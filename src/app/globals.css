@@ -142,3 +142,58 @@ body.dark {
 .animate-bounce-custom {
   animation: bounce 1s infinite;
 }
+
+/* Live pointer name — clean upward rise with cubic easing */
+@keyframes nameRise {
+  0% {
+    opacity: 0;
+    transform: translateY(18px);
+    filter: blur(3px);
+    letter-spacing: 0.04em;
+  }
+  60% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+    filter: blur(0);
+    letter-spacing: 0;
+  }
+}
+.animate-name-rise {
+  animation: nameRise 240ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity, filter;
+}
+
+/* Slow shimmering gradient sweep behind the live pointer chip */
+@keyframes pointerShimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+  100% {
+    background-position: 200% 50%;
+  }
+}
+.pointer-shimmer {
+  background-size: 200% 100%;
+  animation: pointerShimmer 2.5s linear infinite;
+}
+
+/* Soft pulsing glow around the live pointer chip while spinning */
+@keyframes pointerGlow {
+  0%, 100% {
+    box-shadow:
+      0 0 0 0 rgba(168, 85, 247, 0.45),
+      0 10px 30px -10px rgba(168, 85, 247, 0.55);
+  }
+  50% {
+    box-shadow:
+      0 0 0 10px rgba(168, 85, 247, 0),
+      0 14px 36px -8px rgba(168, 85, 247, 0.7);
+  }
+}
+.pointer-glow {
+  animation: pointerGlow 1.6s ease-in-out infinite;
+}

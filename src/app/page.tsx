@@ -42,6 +42,7 @@ const BallotingApp: React.FC = () => {
     rotation,
     hoveredSegment,
     spin,
+    stopSpin,
     reset,
     winners,
     removeWinner,
@@ -363,6 +364,7 @@ const BallotingApp: React.FC = () => {
         <SpinWheel
           participants={participants}
           onSpin={handleSpin}
+          onStop={stopSpin}
           isSpinning={isSpinning}
           isWheelStopped={isWheelStopped}
           rotation={rotation}
