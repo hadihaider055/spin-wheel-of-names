@@ -69,6 +69,7 @@ export const ConfigProvider: React.FC<ConfigProviderProps> = ({ children }) => {
               darkMode: { ...config.theme.darkMode, ...p.theme?.darkMode },
             },
             wheel: { ...config.wheel, ...p.wheel },
+            winner: { ...config.winner, ...p.winner },
             audio: { ...config.audio, ...p.audio },
             branding: { ...config.branding, ...p.branding },
             features: { ...config.features, ...p.features },

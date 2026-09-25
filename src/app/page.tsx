@@ -25,6 +25,7 @@ const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
 const GIFT_IMAGE_STORAGE_KEY = "wheelOfFortuneGiftImage";
 const SELECTED_CATEGORIES_STORAGE_KEY = "wheelOfFortuneSelectedCategories";
 const NAMES_HASH_KEY = "names";
+const META_LABEL_HASH_KEY = "label";
 
 const BallotingApp: React.FC = () => {
   const [inputText, setInputText] = useState("");
@@ -36,7 +37,8 @@ const BallotingApp: React.FC = () => {
   const [multipleWinners, setMultipleWinners] = useState<Participant[]>([]);
   const [isFullReset, setIsFullReset] = useState(false);
   const handedOverRef = useRef(false);
-  const { appConfig, isDark, toggleDarkMode } = useConfig();
+  const { appConfig, isDark, toggleDarkMode, updateWinnerSettings } =
+    useConfig();
   const {
     isSpinning,
     isWheelStopped,
@@ -63,21 +65,22 @@ const BallotingApp: React.FC = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
+    // Handoff from another app: #names=<participant text>&label=<winner detail label>.
+    // The names win over the saved list; an absent label leaves the configured one
+    // alone, so a deployment that means "Class" keeps saying Class.
     let handedOver = false;
-    if (window.location.hash.startsWith(`#${NAMES_HASH_KEY}=`)) {
-      try {
-        const { participants: handoff } = parseParticipants(
-          decodeURIComponent(
-            window.location.hash.slice(NAMES_HASH_KEY.length + 2),
-          ),
-        );
-        if (handoff.length > 0) {
-          setParticipants(handoff);
-          handedOver = true;
-          handedOverRef.current = true;
-        }
-      } catch (error) {
-        console.error("Failed to parse handed over participants", error);
+    const hash = new URLSearchParams(window.location.hash.slice(1));
+    const handedOverNames = hash.get(NAMES_HASH_KEY);
+    if (handedOverNames !== null) {
+      const { participants: handoff } = parseParticipants(handedOverNames);
+      if (handoff.length > 0) {
+        setParticipants(handoff);
+        handedOver = true;
+        handedOverRef.current = true;
+      }
+      const handedOverLabel = hash.get(META_LABEL_HASH_KEY);
+      if (handedOverLabel !== null) {
+        updateWinnerSettings({ metaLabel: handedOverLabel });
       }
       window.history.replaceState(null, "", window.location.pathname);
     }
@@ -604,7 +607,9 @@ const BallotingApp: React.FC = () => {
                                     isDark ? "text-gray-300" : "text-gray-600"
                                   }`}
                                 >
-                                  Class: {winner.grade}
+                                  {appConfig.winner.metaLabel &&
+                                    `${appConfig.winner.metaLabel}: `}
+                                  {winner.grade}
                                 </p>
                               )}
                             </div>

@@ -14,12 +14,17 @@ const WinnerAnnouncement: React.FC<{
   giftImage: string | null;
 }> = ({ winner, onClose, isDark, giftImage }) => {
   const { appConfig } = useConfig();
+  const metaLabel = appConfig.winner.metaLabel;
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const [isMuted, setIsMuted] = useState(!appConfig.winner.celebrationSound);
 
   // Initialize and start audio on mount
   useEffect(() => {
-    if (appConfig.audio.winnerSound && appConfig.winner.celebrationSound && !isMuted) {
+    if (
+      appConfig.audio.winnerSound &&
+      appConfig.winner.celebrationSound &&
+      !isMuted
+    ) {
       const timer = setTimeout(() => {
         const winnerAudio = new Audio(appConfig.audio.winnerSound!);
         winnerAudio.volume = appConfig.audio.volume;
@@ -37,7 +42,7 @@ const WinnerAnnouncement: React.FC<{
         }
       };
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Respond to mute toggle
@@ -69,8 +74,8 @@ const WinnerAnnouncement: React.FC<{
         audioRef.current = null;
       }
     };
-  // onClose is stable enough; displayDuration is read once on mount intentionally
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // onClose is stable enough; displayDuration is read once on mount intentionally
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [onClose]);
 
   const handleManualClose = () => {
@@ -134,7 +139,10 @@ const WinnerAnnouncement: React.FC<{
             <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white p-6 rounded-2xl mb-4">
               <p className="text-3xl font-bold mb-2">{winner.name}</p>
               {winner.grade && winner.grade.trim() !== "" && (
-                <p className="text-xl opacity-90">Class: {winner.grade}</p>
+                <p className="text-xl opacity-90">
+                  {metaLabel && `${metaLabel}: `}
+                  {winner.grade}
+                </p>
               )}
             </div>
 

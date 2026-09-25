@@ -21,6 +21,7 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
   giftImage,
 }) => {
   const { appConfig } = useConfig();
+  const metaLabel = appConfig.winner.metaLabel;
   const [audio, setAudio] = useState<HTMLAudioElement | null>(null);
 
   useEffect(() => {
@@ -136,10 +137,10 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
                   index === 0
                     ? "from-yellow-500 to-orange-500"
                     : index === 1
-                    ? "from-gray-400 to-gray-500"
-                    : index === 2
-                    ? "from-yellow-600 to-yellow-700"
-                    : "from-blue-500 to-purple-600"
+                      ? "from-gray-400 to-gray-500"
+                      : index === 2
+                        ? "from-yellow-600 to-yellow-700"
+                        : "from-blue-500 to-purple-600"
                 } text-white p-4 rounded-xl shadow-lg`}
               >
                 <div className="flex items-center justify-center mb-2">
@@ -148,7 +149,10 @@ const MultipleWinnersModal: React.FC<MultipleWinnersModalProps> = ({
                 </div>
                 <h3 className="text-xl font-bold mb-1">{winner.name}</h3>
                 {winner.grade && winner.grade.trim() !== "" && (
-                  <p className="text-sm opacity-90">Class: {winner.grade}</p>
+                  <p className="text-sm opacity-90">
+                    {metaLabel && `${metaLabel}: `}
+                    {winner.grade}
+                  </p>
                 )}
                 <p className="text-xs opacity-75">{winner.category}</p>
               </div>

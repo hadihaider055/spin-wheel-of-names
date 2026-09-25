@@ -44,6 +44,7 @@ export const appConfig = {
     displayDuration: 6000, // How long to show winner (milliseconds)
     celebrationSound: true,
     animationType: "fadeInScale", // fadeInScale, slideIn, bounce
+    metaLabel: "Class", // Prefix for the detail line under the winner ("" to hide it)
   },
 
   // Audio settings

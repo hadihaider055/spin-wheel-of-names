@@ -30,6 +30,7 @@ export interface AppConfig {
     displayDuration: number;
     celebrationSound: boolean;
     animationType: string;
+    metaLabel: string;
   };
   audio: {
     spinSound: string;
