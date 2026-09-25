@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 // Components
 import DarkModeToggle from "@/components/common/DarkModeToggle";
@@ -24,6 +24,7 @@ import { Trash2 } from "lucide-react";
 const PARTICIPANTS_STORAGE_KEY = "wheelOfFortuneParticipants";
 const GIFT_IMAGE_STORAGE_KEY = "wheelOfFortuneGiftImage";
 const SELECTED_CATEGORIES_STORAGE_KEY = "wheelOfFortuneSelectedCategories";
+const NAMES_HASH_KEY = "names";
 
 const BallotingApp: React.FC = () => {
   const [inputText, setInputText] = useState("");
@@ -34,6 +35,7 @@ const BallotingApp: React.FC = () => {
   const [bumperPrizeWinner, setBumperPrizeWinner] = useState<any>(null);
   const [multipleWinners, setMultipleWinners] = useState<Participant[]>([]);
   const [isFullReset, setIsFullReset] = useState(false);
+  const handedOverRef = useRef(false);
   const { appConfig, isDark, toggleDarkMode } = useConfig();
   const {
     isSpinning,
@@ -61,7 +63,28 @@ const BallotingApp: React.FC = () => {
   useEffect(() => {
     if (typeof window === "undefined") return;
 
-    const savedParticipants = localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
+    let handedOver = false;
+    if (window.location.hash.startsWith(`#${NAMES_HASH_KEY}=`)) {
+      try {
+        const { participants: handoff } = parseParticipants(
+          decodeURIComponent(
+            window.location.hash.slice(NAMES_HASH_KEY.length + 2),
+          ),
+        );
+        if (handoff.length > 0) {
+          setParticipants(handoff);
+          handedOver = true;
+          handedOverRef.current = true;
+        }
+      } catch (error) {
+        console.error("Failed to parse handed over participants", error);
+      }
+      window.history.replaceState(null, "", window.location.pathname);
+    }
+
+    const savedParticipants = handedOver
+      ? null
+      : localStorage.getItem(PARTICIPANTS_STORAGE_KEY);
     const savedGiftImage = localStorage.getItem(GIFT_IMAGE_STORAGE_KEY);
     const savedSelectedCategories = localStorage.getItem(
       SELECTED_CATEGORIES_STORAGE_KEY,
@@ -94,6 +117,7 @@ const BallotingApp: React.FC = () => {
   }, []);
 
   useEffect(() => {
+    if (handedOverRef.current) return;
     if (
       participants.length === 0 &&
       appConfig.defaultParticipants.length > 0 &&
