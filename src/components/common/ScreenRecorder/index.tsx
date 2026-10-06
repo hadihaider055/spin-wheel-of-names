@@ -2,31 +2,10 @@
 
 import { useState, useRef, useEffect, useCallback } from "react";
 import { Video, Square, Download, Mic, MicOff, X, Circle, Camera, CameraOff, GripVertical, Pause, Play } from "lucide-react";
+import { Toggle } from "./Toggle";
+import MobileRecorder from "./MobileRecorder";
 
 type RecordingState = "idle" | "requesting" | "recording" | "stopped";
-
-// Defined at module level so its identity is stable across renders.
-// If defined inside ScreenRecorder, React treats it as a NEW component type
-// on every render, unmounting+remounting the button mid-click and swallowing the event.
-const Toggle: React.FC<{
-  enabled: boolean;
-  onToggle: () => void;
-  label: React.ReactNode;
-  icon: React.ReactNode;
-  rowBg: string;
-  disabled?: boolean;
-}> = ({ enabled, onToggle, label, icon, rowBg, disabled }) => (
-  <div className={`flex items-center justify-between p-3 rounded-lg ${rowBg} ${disabled ? "opacity-40" : ""}`}>
-    <div className="flex items-center gap-2">{icon}<span className="text-sm">{label}</span></div>
-    <button
-      onClick={disabled ? undefined : onToggle}
-      disabled={disabled}
-      className={`relative w-10 h-5 rounded-full transition-colors ${enabled ? "bg-purple-500" : "bg-gray-300 dark:bg-gray-600"} ${disabled ? "cursor-not-allowed" : ""}`}
-    >
-      <div className={`absolute top-0.5 left-0.5 w-4 h-4 rounded-full bg-white shadow transition-transform ${enabled ? "translate-x-5" : ""}`} />
-    </button>
-  </div>
-);
 
 const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   const [mounted, setMounted] = useState(false);
@@ -167,6 +146,8 @@ const ScreenRecorder: React.FC<{ isDark: boolean }> = ({ isDark }) => {
   }, []);
 
   if (!mounted) return null;
+  // Mobile browsers have no getDisplayMedia — fall back to DOM-snapshot recording
+  if (!navigator.mediaDevices?.getDisplayMedia) return <MobileRecorder isDark={isDark} />;
 
   const formatTime = (s: number) =>
     `${Math.floor(s / 60)}:${String(s % 60).padStart(2, "0")}`;

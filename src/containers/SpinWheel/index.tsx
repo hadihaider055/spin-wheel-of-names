@@ -318,7 +318,9 @@ const SpinWheel: React.FC<{
                 transition: "transform 0.3s ease",
               }}
             >
+              {/* data-recorder-live: redrawn every frame by the mobile recorder; value = layer order */}
               <svg
+                data-recorder-live="2"
                 width="28"
                 height="24"
                 viewBox="0 0 28 24"
@@ -342,6 +344,7 @@ const SpinWheel: React.FC<{
             <div className="relative w-full">
               <svg
                 ref={wheelRef}
+                data-recorder-live="1"
                 width={appConfig.wheel.wheelSize}
                 height={appConfig.wheel.wheelSize}
                 viewBox={`0 0 ${appConfig.wheel.wheelSize} ${appConfig.wheel.wheelSize}`}
